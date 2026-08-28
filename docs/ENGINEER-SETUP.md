@@ -2,6 +2,22 @@
 
 This guide covers the configuration engineers normally prepare once so QA authors can focus on scenarios.
 
+## Install and pin
+
+MCP Rigor is published on npm as [`mcprigor`](https://www.npmjs.com/package/mcprigor) and ships compiled code — teams and CI never build it from source.
+
+```bash
+npm install --save-dev mcprigor
+```
+
+For reproducible CI runs, pin an exact version in `package.json` and update it deliberately:
+
+```json
+{ "devDependencies": { "mcprigor": "1.0.0-rc.2" } }
+```
+
+Release notes and tarball checksums for each version are on the [GitHub releases page](https://github.com/FusionOnePlatform/mcprigor/releases).
+
 ## Recommended repository layout
 
 ```text

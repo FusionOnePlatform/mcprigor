@@ -15,13 +15,19 @@ MCP Rigor lets QA teams test MCP tools, resources, prompts, contracts, and trans
 
 ## Install
 
-In your test project:
+MCP Rigor is published on npm as [`mcprigor`](https://www.npmjs.com/package/mcprigor). The package ships compiled code — there is nothing to build from source. In your test project:
 
 ```bash
 npm install --save-dev mcprigor
 ```
 
-Use `npx mcprigor` in commands below, or install globally to use `mcprigor` directly.
+Or try it instantly without installing:
+
+```bash
+npx mcprigor@latest init tests/acceptance.mcpr
+```
+
+Use `npx mcprigor` in commands below, or install globally (`npm install -g mcprigor`) to use `mcprigor` directly.
 
 ## Write your first test
 

@@ -238,6 +238,7 @@ ${jsonLd([APP_LD, ORG_LD, ...breadcrumb, ...extraLd])}
     <a href="${prefix}/docs/getting-started.html">Docs</a>
     <a href="${prefix}/docs/cli-reference.html">CLI</a>
     <a href="${prefix}/docs/plain-language-cookbook.html">Cookbook</a>
+    <a href="https://www.npmjs.com/package/mcprigor" target="_blank" rel="noopener">npm</a>
     <a href="https://github.com/FusionOnePlatform/mcprigor" target="_blank" rel="noopener">GitHub</a>
     ${FUNDING}
   </nav>
@@ -298,7 +299,7 @@ const LANDING = `
 npx mcprigor init tests/acceptance.mcpr
 npx mcprigor check tests/acceptance.mcpr
 npx mcprigor test tests/acceptance.mcpr --html report.html</code></pre>
-  <p>Tests use the <a href="./docs/file-extension.html"><code>.mcpr</code> extension</a> and compile to the same runtime model as YAML.</p>
+  <p>Published on <a href="https://www.npmjs.com/package/mcprigor" target="_blank" rel="noopener">npm</a> with compiled code — no build from source. Tests use the <a href="./docs/file-extension.html"><code>.mcpr</code> extension</a> and compile to the same runtime model as YAML.</p>
 </section>
 <section class="loopiq">
   <h2>Backed by LoopIQ</h2>
@@ -384,7 +385,7 @@ Sitemap: ${SITE}/sitemap.xml
   await writeFile(join(out, "llms.txt"),
 `# MCP Rigor
 
-> MCP Rigor is an open-source, deterministic, black-box test framework for Model Context Protocol (MCP) servers. QA teams write tests in plain language (.mcpr files) with no code and no AI interpretation; developers get contract locks, drift classification, sanitized evidence bundles, semantic snapshots, and stdio↔Streamable-HTTP transport parity. Apache-2.0 licensed, funded and supported by LoopIQ (https://www.loopiq.com), the AI-Native governance platform for software releases. Install: npm install --save-dev mcprigor (Node.js 20/22).
+> MCP Rigor is an open-source, deterministic, black-box test framework for Model Context Protocol (MCP) servers. QA teams write tests in plain language (.mcpr files) with no code and no AI interpretation; developers get contract locks, drift classification, sanitized evidence bundles, semantic snapshots, and stdio↔Streamable-HTTP transport parity. Apache-2.0 licensed, funded and supported by LoopIQ (https://www.loopiq.com), the AI-Native governance platform for software releases. Install: npm install --save-dev mcprigor (published at https://www.npmjs.com/package/mcprigor, ships compiled code, no source build; Node.js 20/22).
 
 ## Docs
 ${NAV.flatMap(({ section, pages }) => pages.map(([doc, label]) => `- [${label}](${SITE}/docs/${slugFor(doc)}.html): ${DESCRIPTIONS[slugFor(doc)] ?? section}`)).join("\n")}

@@ -4,13 +4,19 @@ This guide takes you from installation to one passing MCP test.
 
 ## 1. Install MCP Rigor
 
-You need Node.js 20 or 22.
+You need Node.js 20 or 22. MCP Rigor is published on npm as [`mcprigor`](https://www.npmjs.com/package/mcprigor) — the package ships ready-to-run compiled code, so there is nothing to build from source.
 
 ```bash
 mkdir mcp-acceptance-tests
 cd mcp-acceptance-tests
 npm init -y
 npm install --save-dev mcprigor
+```
+
+To check the installation:
+
+```bash
+npx mcprigor --help
 ```
 
 ## 2. Create a test file
