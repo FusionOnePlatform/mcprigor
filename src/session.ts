@@ -8,6 +8,16 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import type { ClientBehavior, NativeEvent, NativeRequestOptions, NativeRequestResult, Target, TestSession, SessionInfo } from "./types.js";
 import { RigorError } from "./errors.js";
+import { accessSync, constants } from "node:fs";
+import { delimiter, isAbsolute, join as joinPath, resolve as resolvePath } from "node:path";
+
+function assertCommandExists(command: string, cwd?: string): void {
+  const extensions = process.platform === "win32" ? (process.env.PATHEXT ?? ".COM;.EXE;.BAT;.CMD").split(";").map((e) => e.toLowerCase()).concat("") : [""];
+  const runnable = (candidate: string): boolean => extensions.some((extension) => { try { accessSync(candidate + extension, constants.F_OK); return true; } catch { return false; } });
+  if (command.includes("/") || command.includes("\\")) { if (runnable(isAbsolute(command) ? command : resolvePath(cwd ?? process.cwd(), command))) return; }
+  else if ((process.env.PATH ?? "").split(delimiter).filter(Boolean).some((dir) => runnable(joinPath(dir, command)))) return;
+  throw new RigorError("server-spawn", "MCP-SPAWN-001", `Server command not found: ${command}. Check that it is installed and on PATH, or use an absolute path.`);
+}
 
 const activeSessions = new Set<TestSession>();
 export function createSession(target: Target): TestSession { const session = new SdkSession(target, () => activeSessions.delete(session)); activeSessions.add(session); return session; }
@@ -24,6 +34,7 @@ class SdkSession implements TestSession {
   configureClient(behavior: ClientBehavior): void { this.behavior = behavior; }
   async connect(): Promise<SessionInfo> {
     if (this.target.transport === "stdio") {
+      assertCommandExists(this.target.command, this.target.cwd);
       const env = this.target.env ? { ...process.env, ...this.target.env } as Record<string, string> : undefined;
       this.transport = new StdioClientTransport({ command: this.target.command, args: this.target.args, cwd: this.target.cwd, env, stderr: "pipe" });
       this.transport.stderr?.on("data", (chunk) => { if (this.diagnosticBytes >= 64 * 1024) return; const text = String(chunk).slice(0, 16 * 1024).trimEnd(); this.diagnosticBytes += Buffer.byteLength(text); this.messages.push(text); });

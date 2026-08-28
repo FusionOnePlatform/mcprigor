@@ -2,6 +2,7 @@ import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { mkdir, readFile, readdir, realpath, rename, stat, writeFile } from "node:fs/promises";
 import { basename, dirname, extname, join, relative, resolve, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 import { loadTestFile } from "./qa-loader.js";
 import { parityReport, runParity } from "./parity.js";
 import { terminalReport } from "./reporters.js";
@@ -16,7 +17,7 @@ export async function startWorkspace(options: WorkspaceOptions = {}): Promise<{ 
   const root = await realpath(resolve(options.root ?? process.cwd())); const host = options.host ?? "127.0.0.1";
   if (!["127.0.0.1", "localhost", "::1"].includes(host)) throw new Error("MCP-WEB-001 QA workspace binds only to loopback addresses");
   const csrf = randomBytes(32).toString("base64url"); const runs = new Map<string, WorkspaceRun>();
-  const assets = resolve(dirname(new URL(import.meta.url).pathname), "../workspace-assets");
+  const assets = resolve(dirname(fileURLToPath(import.meta.url)), "../workspace-assets");
   const server = createServer(async (req, res) => { securityHeaders(res); try { await route(req, res); } catch (error) { json(res, 500, { error: { code: "MCP-WEB-500", message: error instanceof Error ? error.message : String(error) } }); } });
   async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const url = new URL(req.url ?? "/", `http://${req.headers.host}`); const method = req.method ?? "GET";
