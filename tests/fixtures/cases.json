@@ -1,0 +1,6 @@
+{
+  "cases": [
+    { "caseId": "json-one", "a": 1, "b": 2, "expected": 3 },
+    { "caseId": "json-two", "a": 4, "b": 5, "expected": 9 }
+  ]
+}

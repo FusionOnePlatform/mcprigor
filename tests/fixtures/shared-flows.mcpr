@@ -1,0 +1,8 @@
+MCP Test 1
+
+Flow: "Add with default"
+  Inputs: a, b=1, expected
+  Call tool "add" with:
+    a: "${a}"
+    b: "${b}"
+  Expect "structuredContent.sum" equals "${expected}"

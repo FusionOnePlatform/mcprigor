@@ -1,0 +1,74 @@
+MCP Test 1
+
+Suite: "Complete plain-language MCP suite"
+
+Compare target "Local": node server.js
+Compare target "QA": https://qa.example.com/mcp
+
+Target options for "Local":
+  cwd: ./server
+  env:
+    MODE: test
+
+Target options for "QA":
+  headers:
+    Authorization: "Bearer ${env.QA_MCP_TOKEN}"
+
+Default timeout: 10 seconds
+Redact: "${env.QA_MCP_TOKEN}"
+Snapshots: .mcprigor/customer.snap.json
+Ignore snapshot paths: "$.generatedAt"
+
+Client behavior:
+  roots:
+    - uri: file:///workspace
+      name: Workspace
+  sampling:
+    model: deterministic-fixture
+    text: approved response
+  elicitation:
+    action: accept
+    content:
+      approved: true
+
+Data source: "customers"
+  From CSV "customers.csv"
+  Column "customerId" is string required
+  Column "spend" is number required
+  Column "active" is boolean
+  Column "tier" is string one of gold, silver, bronze
+  Derive "caseLabel" as "${customerId}:${tier}"
+  Keep rows where "active" equals true
+  Sample 25 rows with seed 2025
+  Cache this source
+
+Test: "An active customer can be found"
+  Id: find-customer
+  Require: tools
+  Require protocol: "2025-06-18"
+
+  Variables:
+    tenant: qa
+
+  For each row from "customers"
+
+  Setup:
+  Set log level to "debug"
+
+  Steps:
+  Call tool "find_customer" with:
+    tenant: "${tenant}"
+    customerId: "${row.customerId}"
+
+  Expect it succeeds
+  Expect "structuredContent.customerId" equals "${row.customerId}"
+  Expect "structuredContent.status" does not equal "deleted"
+  Expect "structuredContent.customerId" is a string
+  Expect "structuredContent.customerId" matches "^C-"
+  Expect "structuredContent" matches snapshot "customer" ignoring "$.generatedAt"
+
+  Save "structuredContent.customerId" as "localId"
+  Export "structuredContent.customerId" as "customerId" collecting a map sensitive
+
+  Cleanup:
+  Unsubscribe from resource "customer://${localId}"

@@ -1,0 +1,4 @@
+customerId,spend,active,tier
+C-100,250,true,gold
+C-200,175,true,silver
+C-300,25,false,bronze

@@ -1,0 +1,38 @@
+version: 1
+name: MCP Rigor end-to-end fixture
+target:
+  transport: stdio
+  command: node
+  args: ["--import", "tsx", "tests/fixtures/server.ts"]
+  env:
+    FIXTURE_SECRET: super-secret-value
+redact: ["super-secret-value"]
+tests:
+  - name: MCP-aware tool call
+    requires:
+      capabilities: [tools]
+    steps:
+      - tool:
+          name: add
+          arguments: { a: 20, b: 22 }
+        assert:
+          json:
+            - { path: $.structuredContent.sum, equals: 42 }
+            - path: $.structuredContent
+              schema:
+                type: object
+                required: [sum]
+                properties:
+                  sum: { type: number }
+        capture:
+          answer: $.structuredContent.sum
+      - request:
+          method: resources/read
+          params: { uri: fixture://status }
+        assert:
+          json: { path: $.contents, length: 1 }
+  - name: missing capability is an explicit skip
+    requires:
+      capabilities: [sampling]
+    steps:
+      - request: { method: ping }

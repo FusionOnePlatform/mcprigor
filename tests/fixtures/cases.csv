@@ -1,0 +1,4 @@
+caseId,a,b,expected
+small,2,3,5
+large,20,22,42
+negative,-2,7,5

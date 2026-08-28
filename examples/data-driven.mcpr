@@ -1,0 +1,31 @@
+Suite: "Data-driven calculator tests"
+Server: node --import tsx tests/fixtures/server.ts
+
+Flow: "Verify addition"
+  Inputs: a, b, expected
+  Call tool "add" with:
+    a: "${a}"
+    b: "${b}"
+  Expect "structuredContent.sum" equals "${expected}"
+
+Test: "Addition examples from an inline table"
+  For each row:
+    | caseId | a  | b  | expected |
+    | basic  | 2  | 3  | 5        |
+    | larger | 20 | 22 | 42       |
+
+  Use flow "Verify addition" with:
+    a: "${row.a}"
+    b: "${row.b}"
+    expected: "${row.expected}"
+
+Test: "Addition examples from CSV"
+  For each row in "../tests/fixtures/cases.csv"
+
+  Set "label" using "uppercase" with:
+    value: "${row.caseId}"
+
+  Use flow "Verify addition" with:
+    a: "${row.a}"
+    b: "${row.b}"
+    expected: "${row.expected}"

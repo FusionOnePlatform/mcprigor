@@ -1,0 +1,23 @@
+MCP Test 1
+
+Suite: "Calculator behaves the same everywhere"
+
+# An engineer usually sets these connection lines once.
+Compare target "Local": node --import tsx tests/fixtures/server.ts
+Compare target "QA environment": https://qa.example.com/mcp
+
+# QA authors write ordinary business scenarios below.
+Test: "Adding 20 and 22 gives 42"
+  Id: adding-numbers
+
+  Call tool "add" with:
+    a: 20
+    b: 22
+
+  Expect "structuredContent.sum" equals 42
+
+Test: "The server status is ready"
+  Id: server-status
+
+  Read resource "fixture://status"
+  Expect "contents[0].text" contains "ready"

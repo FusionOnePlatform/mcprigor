@@ -1,0 +1,70 @@
+{
+  "name": "mcprigor",
+  "version": "1.0.0-rc.1",
+  "description": "Plain-language MCP testing with isolated extensions and a local QA workspace",
+  "type": "module",
+  "bin": {
+    "mcprigor": "./dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "schema",
+    "editors",
+    "docs",
+    "workspace-assets",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/cli.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "npm run build && npm test"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "testing",
+    "qa",
+    "test-automation",
+    "plain-language",
+    "contract-testing",
+    "cli"
+  ],
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.27.1",
+    "ajv": "^8.18.0",
+    "exceljs": "^4.4.0",
+    "yaml": "^2.8.2"
+  },
+  "overrides": {
+    "uuid": "^11.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.15",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ashwin-kondapalli/mcprigor.git"
+  },
+  "homepage": "https://mcprigor.com",
+  "bugs": {
+    "url": "https://github.com/ashwin-kondapalli/mcprigor/issues"
+  }
+}

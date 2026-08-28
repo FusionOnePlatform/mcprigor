@@ -1,0 +1,29 @@
+# This file reads like an acceptance test. No programming is required.
+Suite: "Calculator MCP acceptance tests"
+Server: node --import tsx tests/fixtures/server.ts
+
+Test: "Adding 20 and 22 gives 42"
+  Require: tools
+
+  Call tool "add" with:
+    a: 20
+    b: 22
+
+  Expect "structuredContent.sum" equals 42
+  Expect "content[0].text" contains "42"
+  Save "structuredContent.sum" as "answer"
+
+Test: "The status resource is ready"
+  Require: resources
+
+  Read resource "fixture://status"
+  Expect "contents" has 1 item
+  Expect "contents[0].text" contains "ready"
+
+Test: "A greeting can be requested"
+  Require: prompts
+
+  Get prompt "greet" with:
+    name: "QA team"
+
+  Expect "messages[0].content.text" contains "QA team"

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "MCP Rigor Language",
+  "scopeName": "source.mcpr",
+  "patterns": [
+    { "match": "^\\s*#.*$", "name": "comment.line.number-sign.mcpr" },
+    { "match": "^MCP Test 1$", "name": "keyword.control.version.mcpr" },
+    { "match": "^\\s*(Suite|Server|Server options|MCP URL|Compare target|Target options for|Default timeout|Redact|Snapshots|Ignore snapshot paths|Client behavior|Import flows from|Flow|Inputs|Outputs|Test|Scenario|Id|Depends on|Require|Require protocol|Variables|Skip|Setup|Steps|Cleanup|Data source):?", "name": "keyword.control.mcpr" },
+    { "match": "^\\s*(Call tool|Read resource|Get prompt|Send|Expect|Save|Export|Set|Use flow|For each row|Wait up to|Wait for notification|Subscribe to resource|Unsubscribe from resource|Set log level|List all|Get task|List tasks|Cancel task|From CSV|From JSON|From YAML|From Excel|From REST|Column|Derive|Keep rows where|Sample|Cache this source)\\b", "name": "keyword.other.mcpr" },
+    { "begin": "\"", "end": "\"", "name": "string.quoted.double.mcpr" },
+    { "begin": "'", "end": "'", "name": "string.quoted.single.mcpr" },
+    { "match": "\\$\\{[^}]+\\}", "name": "variable.other.mcpr" },
+    { "match": "\\b(true|false|null)\\b", "name": "constant.language.mcpr" },
+    { "match": "\\b-?[0-9]+(?:\\.[0-9]+)?\\b", "name": "constant.numeric.mcpr" }
+  ]
+}

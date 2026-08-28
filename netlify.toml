@@ -1,0 +1,18 @@
+[build]
+  command = "node site/build.mjs"
+  publish = "site-dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[redirects]]
+  from = "/docs"
+  to = "/docs/getting-started.html"
+  status = 302
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer-when-downgrade"
+    X-Frame-Options = "DENY"

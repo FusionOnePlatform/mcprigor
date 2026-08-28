@@ -1,0 +1,39 @@
+version: 1
+name: Calculator MCP smoke suite
+
+target:
+  transport: stdio
+  command: node
+  args: ["./dist/server.js"]
+
+defaults:
+  timeoutMs: 5000
+
+tests:
+  - name: lists and calls the add tool
+    steps:
+      - name: find calculator tool
+        request:
+          method: tools/list
+        assert:
+          status: success
+          json:
+            path: $.tools
+            contains:
+              name: add
+        capture:
+          toolName: $.tools[0].name
+
+      - name: add two numbers
+        request:
+          method: tools/call
+          params:
+            name: "${toolName}"
+            arguments:
+              a: 2
+              b: 3
+        assert:
+          status: success
+          json:
+            path: $.content[0].text
+            equals: "5"

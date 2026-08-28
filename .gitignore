@@ -1,0 +1,12 @@
+node_modules/
+dist/
+site-dist/
+coverage/
+*.log
+.DS_Store
+.env
+.netlify/
+results.json
+results.xml
+*.tgz
+.mcprigor/

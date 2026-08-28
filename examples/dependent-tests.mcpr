@@ -1,0 +1,31 @@
+Suite: "Cross-test output example"
+Server: node --import tsx tests/fixtures/server.ts
+
+Test: "Calculate the first value"
+  Id: first-calculation
+
+  Call tool "add" with:
+    a: 20
+    b: 22
+
+  Export "structuredContent.sum" as "answer"
+
+Test: "Use the first test output"
+  Id: second-calculation
+  Depends on: first-calculation
+
+  Call tool "add" with:
+    a: "${deps.first-calculation.answer}"
+    b: 8
+
+  Expect "structuredContent.sum" equals 50
+  Export "structuredContent.sum" as "finalAnswer"
+
+Test: "Use state from an earlier CLI run"
+  Id: state-example
+
+  Call tool "add" with:
+    a: "${state.startingValue}"
+    b: 1
+
+  Expect "structuredContent.sum" equals 11
