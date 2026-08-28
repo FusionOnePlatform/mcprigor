@@ -4,7 +4,7 @@
   "description": "Plain-language MCP testing with isolated extensions and a local QA workspace",
   "type": "module",
   "bin": {
-    "mcprigor": "./dist/cli.js"
+    "mcprigor": "dist/cli.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
