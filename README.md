@@ -1,5 +1,12 @@
 # MCP Rigor
 
+[![npm version](https://img.shields.io/npm/v/mcprigor?logo=npm&color=C026D3)](https://www.npmjs.com/package/mcprigor)
+[![CI](https://github.com/FusionOnePlatform/mcprigor/actions/workflows/ci.yml/badge.svg)](https://github.com/FusionOnePlatform/mcprigor/actions/workflows/ci.yml)
+[![npm audit: 0 vulnerabilities](https://img.shields.io/badge/npm%20audit-0%20vulnerabilities-14B8A6)](https://github.com/FusionOnePlatform/mcprigor/blob/main/docs/SECURITY-AND-RETENTION.md)
+[![Node 20 | 22](https://img.shields.io/node/v/mcprigor?color=7C3AED)](https://www.npmjs.com/package/mcprigor)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+[![Website](https://img.shields.io/badge/docs-mcprigor.com-E879F9)](https://mcprigor.com)
+
 **Plain-language testing for Model Context Protocol servers.**
 
 MCP Rigor lets QA teams test MCP tools, resources, prompts, contracts, and transports without writing test code. Tests are deterministic: no AI model interprets the wording. Plain-language files use `.mcpr` to avoid collision with existing `.mcp` formats.
