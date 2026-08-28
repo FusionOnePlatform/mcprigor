@@ -238,7 +238,7 @@ ${jsonLd([APP_LD, ORG_LD, ...breadcrumb, ...extraLd])}
     <a href="${prefix}/docs/getting-started.html">Docs</a>
     <a href="${prefix}/docs/cli-reference.html">CLI</a>
     <a href="${prefix}/docs/plain-language-cookbook.html">Cookbook</a>
-    <a href="https://github.com/ashwin-kondapalli/mcprigor" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://github.com/FusionOnePlatform/mcprigor" target="_blank" rel="noopener">GitHub</a>
     ${FUNDING}
   </nav>
 </header>

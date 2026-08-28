@@ -61,10 +61,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ashwin-kondapalli/mcprigor.git"
+    "url": "git+https://github.com/FusionOnePlatform/mcprigor.git"
   },
   "homepage": "https://mcprigor.com",
   "bugs": {
-    "url": "https://github.com/ashwin-kondapalli/mcprigor/issues"
+    "url": "https://github.com/FusionOnePlatform/mcprigor/issues"
   }
 }
