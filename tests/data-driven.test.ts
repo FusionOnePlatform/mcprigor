@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import ExcelJS from "exceljs";
@@ -28,6 +28,33 @@ describe("data providers", () => {
     sheet.addRow(["caseId", "a", "b"]); sheet.addRow(["excel-one", 2, 3]); await workbook.xlsx.writeFile(file);
     const data = await loadData({ provider: "excel", file, sheet: "Regression" });
     expect(data.rows[0]?.values).toMatchObject({ caseId: "excel-one", a: 2, b: 3 });
+  });
+
+  it("reads shared strings, booleans, dates, formulas, and sparse cells from Excel", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "mcp-xlsx-edge-")); temporary.push(directory);
+    const file = join(directory, "edge.xlsx");
+    const workbook = new ExcelJS.Workbook(); const sheet = workbook.addWorksheet("Edge");
+    sheet.addRow(["name", "active", "when", "total", "note"]);
+    const row = sheet.addRow(["quote \" & <tag>", true, new Date(Date.UTC(2026, 0, 15)), undefined, undefined]);
+    row.getCell(4).value = { formula: "1+1", result: 2 };
+    // leave "note" (column 5) empty: sparse cell
+    await workbook.xlsx.writeFile(file);
+    const data = await loadData({ provider: "excel", file, sheet: "Edge" });
+    const values = data.rows[0]!.values as Record<string, unknown>;
+    expect(values.name).toBe('quote " & <tag>');
+    expect(values.active).toBe(true);
+    expect(String(values.when)).toContain("2026-01-15");
+    expect(values.total).toBe(2);
+    expect(values.note).toBe("");
+  });
+
+  it("rejects a missing Excel sheet and a non-XLSX file", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "mcp-xlsx-bad-")); temporary.push(directory);
+    const file = join(directory, "one.xlsx");
+    const workbook = new ExcelJS.Workbook(); workbook.addWorksheet("Only").addRow(["h"]); await workbook.xlsx.writeFile(file);
+    await expect(loadData({ provider: "excel", file, sheet: "Nope" })).rejects.toThrow(/MCP-DATA-008/);
+    const fake = join(directory, "fake.xlsx"); await writeFile(fake, "not a zip at all");
+    await expect(loadData({ provider: "excel", file: fake })).rejects.toThrow(/MCP-DATA-019/);
   });
 
   it("gates remote and custom providers", async () => {

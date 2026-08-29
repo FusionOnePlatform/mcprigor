@@ -172,24 +172,19 @@ function scalar(value: string): unknown {
 }
 async function loadExcel(file: string, sheet: unknown): Promise<Record<string, unknown>[]> {
   const info = await stat(file); if (info.size > 25 * 1024 * 1024) throw new Error("MCP-DATA-018 Spreadsheet exceeds the 25 MiB compressed limit");
-  const header = await readFile(file).then((bytes) => bytes.subarray(0, 4)); if (header[0] !== 0x50 || header[1] !== 0x4b) throw new Error("MCP-DATA-019 Spreadsheet is not a valid XLSX ZIP container");
-  const ExcelJS = (await import("exceljs")).default;
-  const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.readFile(file);
-  const worksheet = sheet ? workbook.getWorksheet(String(sheet)) : workbook.worksheets[0];
-  if (!worksheet) throw new Error(`MCP-DATA-008 Excel sheet “${String(sheet ?? "first sheet")}" was not found`);
-  const headerRow = worksheet.getRow(1);
-  const headers = Array.from({ length: headerRow.cellCount }, (_, index) => String(headerRow.getCell(index + 1).text));
-  const rows: Record<string, unknown>[] = [];
-  worksheet.eachRow((row, rowNumber) => {
-    if (rowNumber === 1) return;
-    rows.push(Object.fromEntries(headers.map((header, index) => {
-      const cell = row.getCell(index + 1);
-      const value = cell.type === ExcelJS.ValueType.Formula ? cell.result : cell.value;
-      return [header, value === null || value === undefined ? "" : value instanceof Date ? value.toISOString() : value];
+  const archive = await readFile(file);
+  if (archive[0] !== 0x50 || archive[1] !== 0x4b) throw new Error("MCP-DATA-019 Spreadsheet is not a valid XLSX ZIP container");
+  const { readXlsxSheet } = await import("./xlsx.js");
+  const { rows } = readXlsxSheet(archive, sheet === undefined || sheet === null ? undefined : String(sheet));
+  const [headerRow, ...body] = rows;
+  if (!headerRow?.length) return [];
+  const headers = headerRow.map((cell) => String(cell ?? ""));
+  return body
+    .filter((row) => row.some((cell) => cell !== "" && cell !== undefined && cell !== null))
+    .map((row) => Object.fromEntries(headers.map((header, index) => {
+      const value = row[index];
+      return [header, value === null || value === undefined ? "" : value];
     })));
-  });
-  return rows;
 }
 async function loadRest(url: string, path: unknown, headers: Record<string, string> | undefined, context: DataContext): Promise<Record<string, unknown>[]> {
   if (!context.allowRemote) throw new Error("MCP-DATA-009 Remote data requires --allow-remote-data");

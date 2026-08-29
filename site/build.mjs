@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const out = join(root, "site-dist");
-const VERSION = "1.0.0-rc.3";
+const VERSION = "1.0.0-rc.4";
 const SITE = "https://mcprigor.com";
 
 // Per-page SEO descriptions (fallback: first paragraph of the doc).
