@@ -11,15 +11,15 @@ const SITE = "https://mcprigor.com";
 
 // Per-page SEO descriptions (fallback: first paragraph of the doc).
 const DESCRIPTIONS = {
-  "getting-started": "Install MCP Rigor and run your first plain-language MCP server test in five minutes. Step-by-step setup for QA teams and developers.",
-  "plain-language-cookbook": "Copy-ready plain-language test examples for MCP servers: tool calls, assertions, errors, variables, cleanup, flows, CSV data, snapshots, and parity.",
+  "getting-started": "Install MCP Rigor and run your first natural-language MCP server test in five minutes. Step-by-step setup for QA teams and developers.",
+  "natural-language-cookbook": "Copy-ready natural-language test examples for MCP servers: tool calls, assertions, errors, variables, cleanup, flows, CSV data, snapshots, and parity.",
   "qa-guide": "Everyday MCP Rigor checklist for QA authors: test structure, actions, expectations, variables, setup and cleanup, and good practices.",
-  "qa-workspace": "Run MCP Rigor in a local browser workspace: edit, validate, and execute plain-language MCP test suites without a terminal.",
-  "guided-authoring": "Generate MCP tests without writing them: MCP Rigor's guided author discovers a live server's tools and builds a reviewable plain-language test.",
+  "qa-workspace": "Run MCP Rigor in a local browser workspace: edit, validate, and execute natural-language MCP test suites without a terminal.",
+  "guided-authoring": "Generate MCP tests without writing them: MCP Rigor's guided author discovers a live server's tools and builds a reviewable natural-language test.",
   "troubleshooting": "Fix common MCP Rigor failures: server spawn errors, initialization timeouts, missing fields, skipped tests, data loading, and snapshot changes.",
   "engineer-setup": "Configure MCP Rigor targets, credentials, repository layout, GitHub Actions CI, contract drift checks, and transport parity for your team.",
   "cli-reference": "Complete MCP Rigor CLI reference: init, check, test, author, parity, discover, contract-check, evidence, snapshots, replay, options, and exit codes.",
-  "language-spec": "The complete deterministic MCP Rigor plain-language (.mcpr) syntax reference: every statement, assertion, and rule.",
+  "language-spec": "The complete deterministic MCP Rigor natural-language (.mcpr) syntax reference: every statement, assertion, and rule.",
   "file-extension": "Why MCP Rigor uses the .mcpr file extension instead of .mcp, and how to migrate existing test files.",
   "data-and-reuse": "Data-driven MCP testing with reusable flows, built-in utilities, CSV, JSON, Excel, REST, and Google Sheets data sources.",
   "data-engineering": "Advanced MCP Rigor test data: typed columns, filters, joins, derived values, seeded sampling, and caching.",
@@ -39,19 +39,19 @@ const DESCRIPTIONS = {
 
 // Answer-engine FAQ used for on-page content and FAQPage JSON-LD.
 const FAQ = [
-  ["What is MCP Rigor?", "MCP Rigor is an open-source, deterministic, black-box test framework for Model Context Protocol (MCP) servers. QA teams write tests in plain language (.mcpr files); developers get contract locks, drift detection, evidence bundles, and transport parity. It is funded by LoopIQ."],
+  ["What is MCP Rigor?", "MCP Rigor is an open-source, deterministic, black-box test framework for Model Context Protocol (MCP) servers. QA teams write tests in natural language (.mcpr files); developers get contract locks, drift detection, evidence bundles, and transport parity. It is funded by LoopIQ."],
   ["How do I test an MCP server?", "Install with `npm install --save-dev mcprigor`, create a test with `npx mcprigor init tests/acceptance.mcpr`, validate it with `npx mcprigor check`, and run it with `npx mcprigor test`. Tests call tools, read resources, and get prompts, then assert on response fields."],
-  ["Does MCP Rigor use AI to interpret tests?", "No. The plain-language wording compiles deterministically — the same sentence always produces the same test. No AI model interprets the wording, which keeps runs repeatable in CI."],
+  ["Does MCP Rigor use AI to interpret tests?", "No. The natural-language wording compiles deterministically — the same sentence always produces the same test. No AI model interprets the wording, which keeps runs repeatable in CI."],
   ["What transports does MCP Rigor support?", "Local stdio subprocesses and deployed Streamable HTTP servers. Transport parity mode runs the same scenario against both and reports semantic differences."],
-  ["What is the .mcpr file extension?", "MCP Rigor plain-language tests use the .mcpr extension — short for MCP Rigor. A .mcpr file contains readable test scenarios that compile deterministically to the same runtime model as YAML."],
+  ["What is the .mcpr file extension?", "MCP Rigor natural-language tests use the .mcpr extension — short for MCP Rigor. A .mcpr file contains readable test scenarios that compile deterministically to the same runtime model as YAML."],
   ["Is MCP Rigor free?", "Yes. MCP Rigor is open source under the Apache-2.0 license, funded and supported by LoopIQ, the AI-Native governance platform for software releases."],
-  ["Who is MCP Rigor for?", "QA engineers who want plain-language MCP tests, developers who need contract drift detection and debugging evidence, and product owners who want readable acceptance criteria with auditable proof."],
+  ["Who is MCP Rigor for?", "QA engineers who want natural-language MCP tests, developers who need contract drift detection and debugging evidence, and product owners who want readable acceptance criteria with auditable proof."],
 ];
 
 const NAV = [
   { section: "Start here", pages: [
     ["GETTING-STARTED", "Getting started"],
-    ["PLAIN-LANGUAGE-COOKBOOK", "Plain-language cookbook"],
+    ["PLAIN-LANGUAGE-COOKBOOK", "Natural-language cookbook"],
     ["QA-GUIDE", "QA guide"],
     ["QA-WORKSPACE", "QA workspace"],
     ["GUIDED-AUTHORING", "Guided authoring"],
@@ -177,11 +177,11 @@ const APP_LD = {
   "@id": `${SITE}/#software`, name: "MCP Rigor",
   applicationCategory: "DeveloperApplication", operatingSystem: "Linux, macOS, Windows",
   softwareVersion: VERSION, url: SITE, image: `${SITE}/assets/og.png`, logo: `${SITE}/assets/logo.svg`,
-  description: "Open-source, deterministic, plain-language test framework for Model Context Protocol (MCP) servers over stdio and Streamable HTTP.",
+  description: "Open-source, deterministic, natural-language test framework for Model Context Protocol (MCP) servers over stdio and Streamable HTTP.",
   license: "https://www.apache.org/licenses/LICENSE-2.0",
   offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
   funder: { "@id": "https://www.loopiq.com/#org" },
-  keywords: "MCP testing, Model Context Protocol, MCP server testing, plain language tests, QA automation, contract testing, transport parity",
+  keywords: "MCP testing, Model Context Protocol, MCP server testing, natural language tests, QA automation, contract testing, transport parity",
   installUrl: "https://www.npmjs.com/package/mcprigor",
   softwareRequirements: "Node.js 20 or 22",
 };
@@ -189,7 +189,7 @@ const APP_LD = {
 function layout({ title, description, content, docsNav = "", isDocs = false, slug = "", extraLd = [] }) {
   const prefix = isDocs ? ".." : ".";
   const canonical = isDocs ? `${SITE}/docs/${slug}.html` : `${SITE}/`;
-  const desc = description ?? "MCP Rigor — deterministic plain-language testing for Model Context Protocol servers. An open-source project funded by LoopIQ.";
+  const desc = description ?? "MCP Rigor — deterministic natural-language testing for Model Context Protocol servers. An open-source project funded by LoopIQ.";
   const breadcrumb = isDocs ? [{
     "@context": "https://schema.org", "@type": "BreadcrumbList",
     itemListElement: [
@@ -216,7 +216,7 @@ function layout({ title, description, content, docsNav = "", isDocs = false, slu
 <meta property="og:image" content="${SITE}/assets/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="MCP Rigor — plain-language testing for Model Context Protocol servers, funded by LoopIQ">
+<meta property="og:image:alt" content="MCP Rigor — natural-language testing for Model Context Protocol servers, funded by LoopIQ">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${escapeHtml(title)}">
 <meta name="twitter:description" content="${escapeHtml(desc)}">
@@ -271,7 +271,7 @@ function docsSidebar(activeSlug) {
 const LANDING = `
 <section class="hero">
   <img class="hero-logo" src="./assets/logo.svg" alt="MCP Rigor logo" width="120" height="120">
-  <h1>Test MCP servers in plain language.</h1>
+  <h1>Test MCP servers in natural language.</h1>
   <p class="tagline">MCP Rigor is an open-source, deterministic, black-box test framework for Model Context Protocol servers — built for QA teams, developers, and product owners.</p>
   <p class="funded-hero">An open-source project proudly <strong>funded by <a href="https://www.loopiq.com" target="_blank" rel="noopener">LoopIQ</a></strong>.</p>
   <div class="cta">
@@ -286,12 +286,12 @@ const LANDING = `
   <p class="hero-note">No test code. No AI interpretation. The same sentence always compiles into the same test.</p>
 </section>
 <section class="grid">
-  <div class="card"><h3>🧪 For QA</h3><p>Write tests that read like acceptance criteria, use the guided no-code wizard, or edit and run suites in a local browser workspace.</p></div>
-  <div class="card"><h3>👩‍💻 For developers</h3><p>Contract locks with SHA-256 fingerprints, classified drift reports, sanitized traces, semantic snapshots, and stable error codes.</p></div>
-  <div class="card"><h3>📋 For product owners</h3><p>Readable tests double as living acceptance criteria, and evidence bundles prove what was tested, against which server, and when.</p></div>
-  <div class="card"><h3>🔀 Transport parity</h3><p>Run the same scenario against a local stdio server and a deployed Streamable HTTP endpoint and see exactly where behavior differs.</p></div>
-  <div class="card"><h3>📊 Data-driven</h3><p>Tables, CSV, JSON, YAML, Excel, REST, and Google Sheets — with typed columns, filters, joins, and seeded sampling.</p></div>
-  <div class="card"><h3>🛡️ Safe by default</h3><p>Remote data and custom code are opt-in. Reports are sanitized and secrets are redacted centrally.</p></div>
+  <div class="card"><h3>For QA</h3><p>Write tests that read like acceptance criteria, use the guided no-code wizard, or edit and run suites in a local browser workspace.</p></div>
+  <div class="card"><h3>For developers</h3><p>Contract locks with SHA-256 fingerprints, classified drift reports, sanitized traces, semantic snapshots, and stable error codes.</p></div>
+  <div class="card"><h3>For product owners</h3><p>Readable tests double as living acceptance criteria, and evidence bundles prove what was tested, against which server, and when.</p></div>
+  <div class="card"><h3>Transport parity</h3><p>Run the same scenario against a local stdio server and a deployed Streamable HTTP endpoint and see exactly where behavior differs.</p></div>
+  <div class="card"><h3>Data-driven</h3><p>Tables, CSV, JSON, YAML, Excel, REST, and Google Sheets — with typed columns, filters, joins, and seeded sampling.</p></div>
+  <div class="card"><h3>Safe by default</h3><p>Remote data and custom code are opt-in. Reports are sanitized and secrets are redacted centrally.</p></div>
 </section>
 <section class="quickstart">
   <h2>Install and run in one minute</h2>
@@ -330,12 +330,12 @@ async function build() {
   const siteLd = {
     "@context": "https://schema.org", "@type": "WebSite",
     "@id": `${SITE}/#website`, url: `${SITE}/`, name: "MCP Rigor",
-    description: "Plain-language testing for Model Context Protocol servers.",
+    description: "Natural-language testing for Model Context Protocol servers.",
     publisher: { "@id": "https://www.loopiq.com/#org" },
   };
   await writeFile(join(out, "index.html"), layout({
-    title: "MCP Rigor — Plain-Language Testing for MCP Servers | Funded by LoopIQ",
-    description: "Open-source, deterministic testing for Model Context Protocol servers. QA teams write plain-language tests; developers get contract drift detection, evidence, and transport parity. Funded by LoopIQ.",
+    title: "MCP Rigor — Natural-Language Testing for MCP Servers | Funded by LoopIQ",
+    description: "Open-source, deterministic testing for Model Context Protocol servers. QA teams write natural-language tests; developers get contract drift detection, evidence, and transport parity. Funded by LoopIQ.",
     content: LANDING, extraLd: [faqLd, siteLd],
   }));
 
@@ -385,13 +385,13 @@ Sitemap: ${SITE}/sitemap.xml
   await writeFile(join(out, "llms.txt"),
 `# MCP Rigor
 
-> MCP Rigor is an open-source, deterministic, black-box test framework for Model Context Protocol (MCP) servers. QA teams write tests in plain language (.mcpr files) with no code and no AI interpretation; developers get contract locks, drift classification, sanitized evidence bundles, semantic snapshots, and stdio↔Streamable-HTTP transport parity. Apache-2.0 licensed, funded and supported by LoopIQ (https://www.loopiq.com), the AI-Native governance platform for software releases. Install: npm install --save-dev mcprigor (published at https://www.npmjs.com/package/mcprigor, ships compiled code, no source build; Node.js 20/22).
+> MCP Rigor is an open-source, deterministic, black-box test framework for Model Context Protocol (MCP) servers. QA teams write tests in natural language (.mcpr files) with no code and no AI interpretation; developers get contract locks, drift classification, sanitized evidence bundles, semantic snapshots, and stdio↔Streamable-HTTP transport parity. Apache-2.0 licensed, funded and supported by LoopIQ (https://www.loopiq.com), the AI-Native governance platform for software releases. Install: npm install --save-dev mcprigor (published at https://www.npmjs.com/package/mcprigor, ships compiled code, no source build; Node.js 20/22).
 
 ## Docs
 ${NAV.flatMap(({ section, pages }) => pages.map(([doc, label]) => `- [${label}](${SITE}/docs/${slugFor(doc)}.html): ${DESCRIPTIONS[slugFor(doc)] ?? section}`)).join("\n")}
 
 ## Key facts
-- Plain-language tests compile deterministically; the same sentence always produces the same test.
+- Natural-language tests compile deterministically; the same sentence always produces the same test.
 - Test files use the .mcpr extension (not .mcp, which conflicts with other software).
 - Transports: local stdio subprocess and deployed Streamable HTTP.
 - CLI: init, check, test, author, parity, workspace, discover, generate, contract-check, contract-diff, contract-update, evidence-show, evidence-compare, snapshot-diff, replay.

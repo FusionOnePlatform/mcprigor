@@ -7,9 +7,9 @@
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 [![Website](https://img.shields.io/badge/docs-mcprigor.com-E879F9)](https://mcprigor.com)
 
-**Plain-language testing for Model Context Protocol servers.**
+**Natural-language testing for Model Context Protocol servers.**
 
-MCP Rigor lets QA teams test MCP tools, resources, prompts, contracts, and transports without writing test code. Tests are deterministic: no AI model interprets the wording. Plain-language files use `.mcpr` to avoid collision with existing `.mcp` formats.
+MCP Rigor lets QA teams test MCP tools, resources, prompts, contracts, and transports without writing test code. Tests are deterministic: no AI model interprets the wording.
 
 > Status: `1.0.0-rc.3` release candidate. Node.js 20 or 22 is required.
 
@@ -130,7 +130,7 @@ Expect "content[0].text" contains "complete"
 Expect "items" has 3 items
 ```
 
-See the [plain-language cookbook](docs/PLAIN-LANGUAGE-COOKBOOK.md) for copy-ready examples.
+See the [natural-language cookbook](docs/PLAIN-LANGUAGE-COOKBOOK.md) for copy-ready examples.
 
 ## Compare local and deployed behavior
 
@@ -162,7 +162,7 @@ Provide a small `.mcpr` file containing the target, then run:
 npx mcprigor author server.mcpr --out search-customer.mcpr
 ```
 
-The guided author discovers operations, asks for inputs, previews a response, and writes a reviewable plain-language test.
+The guided author discovers operations, asks for inputs, previews a response, and writes a reviewable natural-language test.
 
 ## Use data-driven tests
 
@@ -208,7 +208,7 @@ Exit codes:
 mcprigor workspace [DIRECTORY]        Start the local QA interface
 mcprigor init FILE                    Create an example test
 mcprigor check FILE                   Validate without connecting
-mcprigor test FILE                    Run plain-language or YAML tests
+mcprigor test FILE                    Run natural-language or YAML tests
 mcprigor author TARGET --out FILE     Build a test interactively
 mcprigor parity FILE                  Compare named targets
 mcprigor discover FILE                Save the live MCP contract
@@ -221,7 +221,7 @@ See the [complete CLI reference](docs/CLI-REFERENCE.md).
 ## Choose your next guide
 
 - **New QA user:** [Getting started](docs/GETTING-STARTED.md)
-- **Writing scenarios:** [Plain-language cookbook](docs/PLAIN-LANGUAGE-COOKBOOK.md)
+- **Writing scenarios:** [Natural-language cookbook](docs/PLAIN-LANGUAGE-COOKBOOK.md)
 - **Using the browser UI:** [QA workspace](docs/QA-WORKSPACE.md)
 - **Setting up targets and CI:** [Engineer setup](docs/ENGINEER-SETUP.md)
 - **Fixing failures:** [Troubleshooting](docs/TROUBLESHOOTING.md)
