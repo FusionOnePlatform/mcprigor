@@ -4,7 +4,7 @@ name: Calculator MCP smoke suite
 target:
   transport: stdio
   command: node
-  args: ["./dist/server.js"]
+  args: ["--import", "tsx", "tests/fixtures/server.ts"]
 
 defaults:
   timeoutMs: 5000
