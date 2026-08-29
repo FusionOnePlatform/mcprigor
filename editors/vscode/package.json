@@ -1,0 +1,34 @@
+{
+  "name": "mcprigor",
+  "displayName": "MCP Rigor",
+  "description": "Syntax highlighting and inline validation for MCP Rigor (.mcpr) natural-language MCP test suites.",
+  "version": "1.3.0",
+  "publisher": "fusionone",
+  "license": "Apache-2.0",
+  "repository": { "type": "git", "url": "https://github.com/FusionOnePlatform/mcprigor" },
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Programming Languages", "Testing", "Linters"],
+  "keywords": ["mcp", "model context protocol", "testing", "qa"],
+  "main": "./extension.js",
+  "activationEvents": ["onLanguage:mcpr"],
+  "contributes": {
+    "languages": [{
+      "id": "mcpr",
+      "aliases": ["MCP Rigor", "mcpr"],
+      "extensions": [".mcpr"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "mcpr",
+      "scopeName": "source.mcpr",
+      "path": "./syntaxes/mcpr.tmLanguage.json"
+    }],
+    "configuration": {
+      "title": "MCP Rigor",
+      "properties": {
+        "mcprigor.validateOnSave": { "type": "boolean", "default": true, "description": "Run 'mcprigor check' when a .mcpr file is saved and surface diagnostics inline." },
+        "mcprigor.command": { "type": "string", "default": "npx mcprigor", "description": "Command used to invoke the MCP Rigor CLI." }
+      }
+    }
+  }
+}
