@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -91,5 +91,32 @@ describe("mcprigor drift gate", () => {
     expect(ok.out).toContain("within the allowed gate");
     const bad = await run(root, ["drift", "suite2.mcpr", "--against", "mcp.lock.yaml", "--fail-on", "sometimes"]);
     expect(bad.out).toContain("--fail-on must be one of");
+  }, 60000);
+});
+
+describe("mcprigor record", () => {
+  it("proxies a session and generates a runnable draft", async () => {
+    const root = await fixture();
+    const draft = await new Promise<string>((resolvePromise, reject) => {
+      const { spawn } = require("node:child_process") as typeof import("node:child_process");
+      const proc = spawn(process.execPath, [CLI, "record", "--out", "draft.mcpr", "--", "node", "good-server.mjs"], { cwd: root, stdio: ["pipe", "pipe", "pipe"] });
+      let buffer = "";
+      const send = (message: object) => proc.stdin.write(JSON.stringify(message) + "\n");
+      let called = false;
+      proc.stdout.on("data", (chunk: Buffer) => {
+        buffer += chunk.toString();
+        if (buffer.includes('"id":1') && !called) { called = true; send({ jsonrpc: "2.0", method: "notifications/initialized" }); send({ jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "ping", arguments: {} } }); }
+        if (buffer.includes('"id":2')) proc.stdin.end();
+      });
+      send({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "t", version: "1" } } });
+      proc.on("exit", async () => {
+        try { resolvePromise(await readFile(join(root, "draft.mcpr"), "utf8")); } catch (error) { reject(error); }
+      });
+      setTimeout(() => { proc.kill(); reject(new Error("record timed out")); }, 20000);
+    });
+    expect(draft).toContain('Call tool "ping"');
+    expect(draft).toContain('Expect "structuredContent.ok" equals true');
+    const rerun = await run(root, ["test", "draft.mcpr"]);
+    expect(rerun.code).toBe(0);
   }, 60000);
 });

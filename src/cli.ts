@@ -37,6 +37,29 @@ async function main(): Promise<void> {
     console.log(`✓ Created ${output}\n\nNext:\n  1. Open the file and set your server command or URL.\n  2. Change the example tool and expected result.\n  3. Run: mcprigor test ${output}`);
     return;
   }
+  if (command === "record") {
+    const out = flag([file ?? "", ...flags], "--out") ?? "recorded-tests.mcpr";
+    const separator = process.argv.indexOf("--");
+    if (separator < 0 || !process.argv[separator + 1]) throw new UsageError('record requires the server command after "--", e.g. mcprigor record --out draft.mcpr -- node dist/server.js');
+    const [serverCommand, ...serverArgs] = process.argv.slice(separator + 1) as [string, ...string[]];
+    const { recordSession } = await import("./record.js");
+    console.error(`Recording MCP traffic through ${[serverCommand, ...serverArgs].join(" ")} — drive the session from your client, then close it.`);
+    const recorded = await recordSession({ command: serverCommand, args: serverArgs, out });
+    console.error(`\n✓ Recorded ${recorded.calls} tool call${recorded.calls === 1 ? "" : "s"} into ${recorded.out}\nReview the draft, then: mcprigor test ${recorded.out}`);
+    return;
+  }
+  if (command === "flaky") {
+    assertKnownFlags(flags, ["--window", "--json"]);
+    const { analyzeFlakiness, flakyReport, loadHistoryFor } = await import("./flaky.js");
+    const root = file && !file.startsWith("--") ? resolve(file) : process.cwd();
+    const entries = await loadHistoryFor(root);
+    if (!entries.length) { console.log(`No run history found under ${root}/.mcprigor/. Run tests first (CLI runs, the QA workspace, and mcprigor serve all record history).`); return; }
+    const data = analyzeFlakiness(entries, numericFlag(flags, "--window") ?? 200);
+    console.log(flakyReport(data));
+    const jsonOut = flag(flags, "--json");
+    if (jsonOut) await writeFile(jsonOut, JSON.stringify(data, null, 2) + "\n", "utf8");
+    process.exitCode = data.tests.length ? 1 : 0; return;
+  }
   if (!file) throw new UsageError(`The ${command} command requires a test file`);
 
   if (command === "author" || command === "create") {
@@ -115,18 +138,6 @@ async function main(): Promise<void> {
     await writeGeneratedSuite(generateSuite(lock, target), output);
     console.log(`✓ Created ready-to-run contract tests in ${output}`);
     return;
-  }
-  if (command === "flaky") {
-    assertKnownFlags(flags, ["--window", "--json"]);
-    const { analyzeFlakiness, flakyReport, loadHistoryFor } = await import("./flaky.js");
-    const root = file && !file.startsWith("--") ? resolve(file) : process.cwd();
-    const entries = await loadHistoryFor(root);
-    if (!entries.length) { console.log(`No run history found under ${root}/.mcprigor/. Run tests first (CLI runs, the QA workspace, and mcprigor serve all record history).`); return; }
-    const data = analyzeFlakiness(entries, numericFlag(flags, "--window") ?? 200);
-    console.log(flakyReport(data));
-    const jsonOut = flag(flags, "--json");
-    if (jsonOut) await writeFile(jsonOut, JSON.stringify(data, null, 2) + "\n", "utf8");
-    process.exitCode = data.tests.length ? 1 : 0; return;
   }
   if (command !== "run" && command !== "test") throw new UsageError(`Unknown command: ${command}. Try: mcprigor --help`);
 
@@ -272,6 +283,9 @@ Start here:
                                       Retry failures; skip quarantined tests
   mcprigor flaky [DIRECTORY] [--window 200] [--json out.json]
                                       Detect pass/fail flips from run history
+  mcprigor record --out draft.mcpr -- node dist/server.js
+                                      Proxy a live MCP session and generate a
+                                      reviewable test draft from real traffic
   mcprigor author server.mcpr --out new-test.mcpr
                                       Guided no-code test creation
 
