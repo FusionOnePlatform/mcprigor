@@ -1,0 +1,9 @@
+MCP Test 1
+Suite: "Order service"
+Server: node server.mjs
+
+Test: "an order can be found by id"
+  Call tool "find_order" with:
+    orderId: "A-1001"
+  Expect "structuredContent.status" equals "shipped"
+  Expect "structuredContent.items" equals 3

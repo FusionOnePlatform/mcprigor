@@ -9,6 +9,8 @@
 
 **Natural-language testing for Model Context Protocol servers.**
 
+![MCP Rigor demo: a natural-language test file, then mcprigor check and mcprigor test with passing results](.github/assets/demo.gif)
+
 MCP Rigor lets QA teams test MCP tools, resources, prompts, contracts, and transports without writing test code. Tests are deterministic: no AI model interprets the wording.
 
 > Status: `1.0.0-rc.4` release candidate. Node.js 20 or 22 is required.
