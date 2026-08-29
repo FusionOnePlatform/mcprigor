@@ -37,3 +37,22 @@ environments:
     expect(() => parseProjectConfig("default: ghost\nenvironments:\n  a: node a.js", "/p")).toThrow(/MCP-PROJ-004/);
   });
 });
+
+describe("native step schema parity", () => {
+  const base = (native: object) => ({ version: 1, name: "s", target: { transport: "stdio", command: "node" }, tests: [{ name: "t", steps: [{ native }] }] });
+
+  it("accepts every real native action including configure-client", async () => {
+    const { validateSuite } = await import("../src/loader.js");
+    for (const action of ["request", "await-notification", "subscribe", "unsubscribe", "set-log-level", "list-all", "task-get", "task-list", "task-cancel", "configure-client"]) {
+      expect(() => validateSuite(base({ action }))).not.toThrow();
+    }
+    expect(() => validateSuite(base({ action: "configure-client", behavior: { elicitation: { action: "accept", content: { ok: true } }, sampling: { model: "m", text: "t" } } }))).not.toThrow();
+  });
+
+  it("rejects typos at validate time, matching .mcpr compile-time strictness", async () => {
+    const { validateSuite } = await import("../src/loader.js");
+    expect(() => validateSuite(base({ action: "configure-clint" }))).toThrow(/allowed values/);
+    expect(() => validateSuite(base({ action: "configure-client", behavior: { elicitation: { action: "acceptt" } } }))).toThrow(/allowed values/);
+    expect(() => validateSuite(base({ action: "configure-client", behavour: {} }))).toThrow(/additional properties/);
+  });
+});

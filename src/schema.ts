@@ -99,7 +99,22 @@ export const suiteSchema = {
           type: "object", additionalProperties: false, required: ["variable", "function"],
           properties: { variable: { type: "string" }, function: { type: "string" }, arguments: { type: "object" } },
         },
-        native: { type: "object", required: ["action"], properties: { action: { type: "string" } } },
+        native: {
+          type: "object", additionalProperties: false, required: ["action"],
+          properties: {
+            action: { enum: ["request", "await-notification", "subscribe", "unsubscribe", "set-log-level", "list-all", "task-get", "task-list", "task-cancel", "configure-client"] },
+            behavior: {
+              type: "object", additionalProperties: false,
+              properties: {
+                roots: { type: "array", items: { type: "object", additionalProperties: false, required: ["uri"], properties: { uri: { type: "string" }, name: { type: "string" } } } },
+                sampling: { type: "object", additionalProperties: false, required: ["model", "text"], properties: { model: { type: "string" }, text: { type: "string" } } },
+                elicitation: { type: "object", additionalProperties: false, required: ["action"], properties: { action: { enum: ["accept", "decline", "cancel"] }, content: { type: "object" } } },
+              },
+            },
+            method: { type: "string" }, params: {}, uri: { type: "string" }, level: { type: "string" }, field: { type: "string" },
+            timeoutMs: { type: "integer", minimum: 1, maximum: 600000 }, progress: { type: "boolean" }, cancelAfterMs: { type: "integer", minimum: 1 }, taskId: { type: "string" },
+          },
+        },
         phase: { enum: ["setup", "test", "cleanup"] }, always: { type: "boolean" },
         assert: { $ref: "#/$defs/assertBlock" },
         capture: { type: "object", additionalProperties: { type: "string", pattern: "^\\$" } },
