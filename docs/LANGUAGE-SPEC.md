@@ -96,7 +96,17 @@ Client behavior:
 
 ## Imports
 
+```
+
+Per-test scripted responses (override `Client behavior:` for one test):
+
 ```text
+When the server asks for input, respond "accept" with:
+  field: value
+When the server asks for input, respond "decline"
+When the server requests sampling, respond "scripted text"
+```
+text
 Import flows from "./shared/customer-flows.mcpr"
 ```
 

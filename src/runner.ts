@@ -174,6 +174,7 @@ function aggregateLogicalOutputs(tests: TestCase[], results: Map<string, TestRes
 async function executeNativeStep(session: TestSession, native: Extract<TestStep, { native: unknown }>["native"], variables: Record<string, unknown>): Promise<unknown> {
   const params = replaceVariables(native.params, variables);
   if (native.behavior) session.configureClient?.(replaceVariables(native.behavior, variables) as any);
+  if (native.action === "configure-client") return { configured: true };
   if (native.action === "await-notification") { if (!session.awaitEvent || !native.method) throw new Error("Native event support is unavailable"); return session.awaitEvent(native.method, native.timeoutMs); }
   if (native.action === "subscribe") { if (!session.subscribe || !native.uri) throw new Error("Resource subscription support is unavailable"); return session.subscribe(String(replaceVariables(native.uri, variables))); }
   if (native.action === "unsubscribe") { if (!session.unsubscribe || !native.uri) throw new Error("Resource subscription support is unavailable"); return session.unsubscribe(String(replaceVariables(native.uri, variables))); }

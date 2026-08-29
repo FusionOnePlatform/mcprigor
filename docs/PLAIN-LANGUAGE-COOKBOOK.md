@@ -270,6 +270,38 @@ Server options:
 
 The command runs once before the suite connects; its output (a single token on stdout) becomes the `Authorization: Bearer …` header. The fetched token is auto-redacted from every report and evidence bundle. The command can do anything — call your identity provider, read a keychain, exchange client credentials — as long as it prints exactly one token. If it fails or prints nothing, the run stops with `MCP-AUTH-002` before any test executes.
 
+## Script the user's answer to elicitation
+
+When a tool asks the user for input (MCP elicitation), script the answer inside the test so the run stays deterministic:
+
+```text
+Test: "deletion is confirmed when the user accepts"
+  When the server asks for input, respond "accept" with:
+    confirm: true
+  Call tool "delete_order"
+  Expect "structuredContent.deleted" equals true
+
+Test: "deletion is aborted when the user declines"
+  When the server asks for input, respond "decline"
+  Call tool "delete_order"
+  Expect "structuredContent.deleted" equals false
+```
+
+`accept` may carry a `with:` block of field values matching the server's requested schema; `decline` and `cancel` may not. The scripted answer applies from that line onward within the test.
+
+## Script the LLM's answer to sampling
+
+When a tool asks the client for a completion (MCP sampling), give it a fixed response — no real model, no flakiness:
+
+```text
+Test: "summaries embed the sampled text"
+  When the server requests sampling, respond "A concise deterministic summary."
+  Call tool "summarize"
+  Expect "structuredContent.summary" equals "A concise deterministic summary."
+```
+
+Suite-wide defaults live in a `Client behavior:` block; these per-test lines override them for one test.
+
 ## Match a snapshot
 
 ```text
