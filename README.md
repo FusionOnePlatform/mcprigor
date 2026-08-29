@@ -240,6 +240,10 @@ mcprigor evidence-show DIRECTORY
 
 See the [complete CLI reference](docs/CLI-REFERENCE.md).
 
+## Editor support
+
+The VS Code extension in [`editors/vscode`](editors/vscode) adds syntax highlighting and inline `mcprigor check` diagnostics for `.mcpr` files. Package it with `npx @vscode/vsce package` from that directory, or install a release `.vsix` with `code --install-extension`.
+
 ## Choose your next guide
 
 - **New QA user:** [Getting started](docs/GETTING-STARTED.md)
