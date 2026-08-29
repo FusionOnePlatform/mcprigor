@@ -1,0 +1,36 @@
+name: Feature request
+description: Propose a new capability or an improvement to an existing one.
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Describe the testing situation, not the solution — e.g. "Our MCP server paginates tool results and we cannot assert across pages."
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: What would the test file, CLI command, or report look like? A sketch of the plain-language wording helps a lot.
+      placeholder: |
+        Test: "lists every customer across pages"
+          Call tool "list_customers" collecting all pages
+          Expect row count is 250
+  - type: dropdown
+    id: role
+    attributes:
+      label: Which role does this mainly serve?
+      options:
+        - QA / test author
+        - Developer / debugging
+        - Product owner / reporting
+        - CI / automation
+        - Other
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Workarounds you considered
+      description: What did you try with the current feature set, and where did it fall short?

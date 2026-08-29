@@ -1,0 +1,57 @@
+name: Bug report
+description: Something in MCP Rigor does not work as documented.
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. For **security vulnerabilities**, please do not open a public issue — use [private reporting](https://github.com/FusionOnePlatform/mcprigor/security/advisories/new) instead.
+  - type: input
+    id: version
+    attributes:
+      label: MCP Rigor version
+      placeholder: "1.0.0-rc.4 (npx mcprigor --version / package.json)"
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Node.js version and operating system
+      placeholder: "Node 22.11.0, macOS 15 / Ubuntu 24.04 / Windows 11"
+    validations:
+      required: true
+  - type: dropdown
+    id: transport
+    attributes:
+      label: Transport
+      options:
+        - stdio (local server command)
+        - Streamable HTTP (URL)
+        - Both / parity mode
+        - Not transport-related
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead? Include the diagnostic code (MCP-XXX-NNN / MCPLANGNNN / QA-LANG-NNN) if one was shown.
+      placeholder: |
+        1. Created this test file...
+        2. Ran `npx mcprigor test ...`
+        3. Expected ... but got MCP-DATA-008 ...
+    validations:
+      required: true
+  - type: textarea
+    id: test-file
+    attributes:
+      label: Minimal test file
+      description: The smallest .mcpr or YAML suite that reproduces the problem. **Redact secrets, tokens, and internal URLs.**
+      render: text
+  - type: textarea
+    id: output
+    attributes:
+      label: Full command output
+      description: Paste the complete terminal output. **Redact secrets before pasting.**
+      render: shell

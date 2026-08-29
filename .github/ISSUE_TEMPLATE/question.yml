@@ -1,0 +1,22 @@
+name: Question / documentation
+description: Ask how to express a scenario, or report unclear documentation.
+title: "[Question]: "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check the [documentation](https://mcprigor.com) and the [natural-language cookbook](https://mcprigor.com/docs/plain-language-cookbook.html) first — your scenario may already have a copy-ready example.
+  - type: textarea
+    id: question
+    attributes:
+      label: What are you trying to do?
+      description: Describe the scenario you want to test or the documentation that was unclear.
+    validations:
+      required: true
+  - type: textarea
+    id: attempted
+    attributes:
+      label: What did you try?
+      description: The test wording or command you attempted, and what MCP Rigor said.
+      render: text
