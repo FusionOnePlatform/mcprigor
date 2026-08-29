@@ -37,7 +37,8 @@ The server speaks MCP over stdio. Typical client configuration:
 | `read_suite` | Read one test file. |
 | `write_suite` | Create or overwrite one `.mcpr` file (omit `text` for a starter template). |
 | `validate_suite` | Compile without running; returns test names or a diagnostic with line/column and a fix hint. |
-| `run_tests` | Run 1–20 suites; returns per-test status, duration, and failure messages. Failing runs set `isError`. |
+| `run_tests` | Run 1–20 suites, optionally with `filter` to run matching test names only; returns per-test status, duration, and failure messages. Failing runs set `isError`. |
+| `get_contract_drift` | Compare a contract lock file against the live server a suite declares. Read-only: classifies added/removed/changed surfaces as breaking or non-breaking, and never updates the lock. |
 | `run_parity` | Run a suite's declared parity targets and compare transports. |
 | `get_history` | Read recorded run history, filterable by suite or test name. |
 
@@ -64,4 +65,4 @@ Additional guards:
 
 ## Limits
 
-The MCP server exposes the create/validate/run loop. Renaming files, deleting files, snapshot acceptance, contract updates, and evidence comparison remain CLI (or workspace) operations by design — an agent should not silently rewrite baselines that exist to catch its own regressions.
+The MCP server exposes the create/validate/run loop. Renaming files, deleting files, snapshot acceptance, contract updates (`get_contract_drift` is read-only), and evidence comparison remain CLI (or workspace) operations by design — an agent should not silently rewrite baselines that exist to catch its own regressions.

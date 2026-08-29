@@ -43,6 +43,13 @@ Common options:
 
 ```text
 --test "pattern*"          Run matching tests
+--command "node server.js" Override the suite's declared server target
+--url https://qa.example.com/mcp
+                           Override with a Streamable HTTP endpoint
+--watch                    Rerun automatically when files change
+--github-annotations       Emit ::error/::notice workflow commands
+                           (automatic when GITHUB_ACTIONS=true;
+                           disable with --no-github-annotations)
 --html report.html         Write a readable HTML report
 --json result.json         Write structured JSON
 --junit result.xml         Write JUnit XML

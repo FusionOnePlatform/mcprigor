@@ -40,7 +40,7 @@ describe("mcprigor serve (MCP server)", () => {
     const client = await connect(root);
     try {
       const tools = await client.listTools();
-      expect(tools.tools.map((tool) => tool.name).sort()).toEqual(["get_history", "list_suites", "read_suite", "run_parity", "run_tests", "validate_suite"].concat(["write_suite"]).sort());
+      expect(tools.tools.map((tool) => tool.name).sort()).toEqual(["get_contract_drift", "get_history", "list_suites", "read_suite", "run_parity", "run_tests", "validate_suite", "write_suite"].sort());
 
       const listed = await client.callTool({ name: "list_suites", arguments: {} }) as any;
       expect(listed.structuredContent.suites.map((suite: any) => suite.path)).toContain("math.mcpr");
@@ -101,6 +101,36 @@ describe("mcprigor serve (MCP server)", () => {
       expect(run.isError).toBe(true);
       expect(run.structuredContent.status).toBe("failed");
       expect(run.structuredContent.items[0].tests[0].error).toBeTruthy();
+    } finally { await client.close(); }
+  }, 60000);
+});
+
+describe("mcprigor serve 1.2 additions", () => {
+  it("run_tests honors the filter argument", async () => {
+    const root = await fixture();
+    await writeFile(join(root, "two.mcpr"), `MCP Test 1\nSuite: "Two"\nServer: node server.mjs\n\nTest: "first adds"\n  Call tool "add" with:\n    a: 1\n    b: 1\n  Expect "structuredContent.sum" equals 2\n\nTest: "second adds"\n  Call tool "add" with:\n    a: 2\n    b: 2\n  Expect "structuredContent.sum" equals 4\n`);
+    const client = await connect(root);
+    try {
+      const run = await client.callTool({ name: "run_tests", arguments: { paths: ["two.mcpr"], filter: "first*" } }) as any;
+      const tests = run.structuredContent.items[0].tests;
+      expect(tests.map((t: any) => t.name)).toEqual(["first adds"]);
+      expect(tests[0].status).toBe("passed");
+    } finally { await client.close(); }
+  }, 60000);
+
+  it("get_contract_drift reports drift read-only and never rewrites the lock", async () => {
+    const root = await fixture();
+    const lockBefore = `version: 1\nserver:\n  name: stub\n  version: 1.0.0\n  capabilities: {}\nprotocolVersion: 2025-06-18\ncontractSha256: none\ntools:\n  - name: subtract\n    description: gone\nresources: []\nresourceTemplates: []\nprompts: []\n`;
+    await writeFile(join(root, "mcp.lock.yaml"), lockBefore);
+    const client = await connect(root);
+    try {
+      const drift = await client.callTool({ name: "get_contract_drift", arguments: { lock: "mcp.lock.yaml", suite: "math.mcpr" } }) as any;
+      const payload = drift.structuredContent ?? JSON.parse(drift.content[0].text);
+      expect(payload.breaking).toBe(true);
+      expect(payload.report).toContain("subtract");
+      expect(drift.isError).toBe(true);
+      const after = await readFile(join(root, "mcp.lock.yaml"), "utf8");
+      expect(after).toBe(lockBefore);
     } finally { await client.close(); }
   }, 60000);
 });
