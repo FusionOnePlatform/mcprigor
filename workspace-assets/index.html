@@ -1,1 +1,102 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>MCP Rigor QA Workspace</title><link rel="stylesheet" href="/style.css"></head><body><header><div><strong>MCP Rigor</strong><span>QA Workspace</span></div><div id="connection">Connecting…</div></header><main><aside><button id="new" class="primary">＋ New test file</button><button id="refresh">↻ Refresh list</button><nav id="suites" aria-label="Test suites"></nav></aside><section class="workbench"><div class="toolbar"><button id="save">Save</button><button id="validate">Validate</button><button id="run" class="primary">▶ Run tests</button><button id="parity">Run parity</button><span id="dirty"></span></div><textarea id="editor" spellcheck="false" aria-label="Natural-language MCP test editor"></textarea><div id="diagnostics" role="status" aria-live="polite"></div></section><aside class="results"><h2>Run results</h2><pre id="output">No run yet.</pre></aside></main><footer><span id="workspace"></span><span>Natural language and YAML share one runtime model</span></footer><script type="module" src="/app.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MCP Rigor — QA Workspace</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+  <div class="brand">
+    <svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12l5 5L20 6" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <strong>MCP Rigor</strong>
+    <span class="divider"></span>
+    <span class="sub">QA Workspace</span>
+  </div>
+  <div class="header-right">
+    <span id="version" class="pill"></span>
+    <span id="connection" class="conn"><span class="dot"></span>Connecting…</span>
+  </div>
+</header>
+
+<main>
+  <aside class="sidebar">
+    <button id="new" class="primary block">＋ New test file</button>
+    <div class="search-row">
+      <input id="filter" type="search" placeholder="Filter files…" aria-label="Filter test files">
+      <button id="refresh" class="icon" title="Refresh list" aria-label="Refresh list">↻</button>
+    </div>
+    <nav id="suites" aria-label="Test suites"></nav>
+    <div class="sidebar-foot">
+      <a href="https://mcprigor.com/docs/plain-language-cookbook.html" target="_blank" rel="noreferrer">📖 Cookbook — copy-ready examples</a>
+    </div>
+  </aside>
+
+  <section class="workbench">
+    <div class="toolbar">
+      <span id="filename" class="filename">No file open</span>
+      <span id="dirty" class="dirty"></span>
+      <span class="spacer"></span>
+      <button id="save" title="Save (⌘S / Ctrl+S)">Save</button>
+      <button id="validate" title="Check wording without running">Validate</button>
+      <button id="parity" title="Compare targets declared in this suite">Parity</button>
+      <button id="run" class="primary" title="Run tests (⌘⏎ / Ctrl+Enter)">▶ Run tests</button>
+    </div>
+    <div id="editor-wrap" class="editor-wrap">
+      <div id="gutter" class="gutter" aria-hidden="true"></div>
+      <div class="editor-stack">
+        <pre id="highlight" class="highlight" aria-hidden="true"><code id="highlight-code"></code></pre>
+        <textarea id="editor" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Natural-language MCP test editor"></textarea>
+      </div>
+    </div>
+    <div id="welcome" class="welcome" hidden>
+      <div class="welcome-card">
+        <h1>Test your MCP server in plain English</h1>
+        <p>No test code. No AI interpreting your words. The same sentence always runs the same test.</p>
+        <ol>
+          <li><strong>Create a test file</strong> — it opens pre-filled with a working example.</li>
+          <li><strong>Point it at your server</strong> — set the <code>Server:</code> line to your MCP server command, or use <code>MCP URL:</code> for a deployed endpoint.</li>
+          <li><strong>Validate, then run</strong> — green means your server keeps its promises.</li>
+        </ol>
+        <button id="welcome-new" class="primary large">＋ Create your first test file</button>
+        <p class="hint">Already have <code>.mcpr</code> or YAML suites in this folder? They appear in the list on the left.</p>
+      </div>
+    </div>
+    <div id="diagnostics" class="diagnostics" role="status" aria-live="polite" hidden></div>
+  </section>
+
+  <aside class="results">
+    <div class="results-head">
+      <h2>Run results</h2>
+      <span id="run-badge" class="badge" hidden></span>
+    </div>
+    <pre id="output" class="output"><span class="muted">Nothing has run yet.
+Open a test file and click ▶ Run tests.</span></pre>
+  </aside>
+</main>
+
+<footer>
+  <span id="workspace"></span>
+  <span class="foot-right">Natural language and YAML share one runtime model</span>
+</footer>
+
+<dialog id="new-dialog">
+  <form method="dialog" id="new-form">
+    <h3>New test file</h3>
+    <p>Created from a working example you can edit right away.</p>
+    <label for="new-name">File name</label>
+    <input id="new-name" type="text" placeholder="e.g. checkout tests" autocomplete="off" required pattern="[A-Za-z0-9][A-Za-z0-9 ._-]{0,80}">
+    <p class="dialog-hint"><code>.mcpr</code> is added automatically.</p>
+    <p id="new-error" class="dialog-error" hidden></p>
+    <div class="dialog-actions">
+      <button type="button" id="new-cancel" class="ghost">Cancel</button>
+      <button type="submit" class="primary" id="new-create">Create file</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" class="toast" role="status" hidden></div>
+<script type="module" src="/app.js"></script>
+</body>
+</html>
