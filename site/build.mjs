@@ -40,7 +40,7 @@ const DESCRIPTIONS = {
 // Answer-engine FAQ used for on-page content and FAQPage JSON-LD.
 const FAQ = [
   ["What is MCP Rigor?", "MCP Rigor is an open-source, deterministic, black-box test framework for Model Context Protocol (MCP) servers. QA teams write tests in natural language (.mcpr files); developers get contract locks, drift detection, evidence bundles, and transport parity. It is funded by LoopIQ."],
-  ["How do I test an MCP server?", "Install with `npm install --save-dev mcprigor`, create a test with `npx mcprigor init tests/acceptance.mcpr`, validate it with `npx mcprigor check`, and run it with `npx mcprigor test`. Tests call tools, read resources, and get prompts, then assert on response fields."],
+  ["How do I test an MCP server?", "Install with `npm install mcprigor`, create a test with `npx mcprigor init tests/acceptance.mcpr`, validate it with `npx mcprigor check`, and run it with `npx mcprigor test`. Tests call tools, read resources, and get prompts, then assert on response fields."],
   ["Does MCP Rigor use AI to interpret tests?", "No. The natural-language wording compiles deterministically — the same sentence always produces the same test. No AI model interprets the wording, which keeps runs repeatable in CI."],
   ["What transports does MCP Rigor support?", "Local stdio subprocesses and deployed Streamable HTTP servers. Transport parity mode runs the same scenario against both and reports semantic differences."],
   ["What is the .mcpr file extension?", "MCP Rigor natural-language tests use the .mcpr extension — short for MCP Rigor. A .mcpr file contains readable test scenarios that compile deterministically to the same runtime model as YAML."],
@@ -295,7 +295,7 @@ const LANDING = `
 </section>
 <section class="quickstart">
   <h2>Install and run in one minute</h2>
-  <pre><code>npm install --save-dev mcprigor
+  <pre><code>npm install mcprigor
 npx mcprigor init tests/acceptance.mcpr
 npx mcprigor check tests/acceptance.mcpr
 npx mcprigor test tests/acceptance.mcpr --html report.html</code></pre>
@@ -385,7 +385,7 @@ Sitemap: ${SITE}/sitemap.xml
   await writeFile(join(out, "llms.txt"),
 `# MCP Rigor
 
-> MCP Rigor is an open-source, deterministic, black-box test framework for Model Context Protocol (MCP) servers. QA teams write tests in natural language (.mcpr files) with no code and no AI interpretation; developers get contract locks, drift classification, sanitized evidence bundles, semantic snapshots, and stdio↔Streamable-HTTP transport parity. Apache-2.0 licensed, funded and supported by LoopIQ (https://www.loopiq.com), the AI-Native governance platform for software releases. Install: npm install --save-dev mcprigor (published at https://www.npmjs.com/package/mcprigor, ships compiled code, no source build; Node.js 20/22).
+> MCP Rigor is an open-source, deterministic, black-box test framework for Model Context Protocol (MCP) servers. QA teams write tests in natural language (.mcpr files) with no code and no AI interpretation; developers get contract locks, drift classification, sanitized evidence bundles, semantic snapshots, and stdio↔Streamable-HTTP transport parity. Apache-2.0 licensed, funded and supported by LoopIQ (https://www.loopiq.com), the AI-Native governance platform for software releases. Install: npm install mcprigor (published at https://www.npmjs.com/package/mcprigor, ships compiled code, no source build; Node.js 20/22).
 
 ## Docs
 ${NAV.flatMap(({ section, pages }) => pages.map(([doc, label]) => `- [${label}](${SITE}/docs/${slugFor(doc)}.html): ${DESCRIPTIONS[slugFor(doc)] ?? section}`)).join("\n")}

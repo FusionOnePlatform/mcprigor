@@ -48,7 +48,7 @@ install → create .mcpr test → check → test → add CI → enable evidence
 ```
 
 ```bash
-npm install --save-dev mcprigor
+npm install mcprigor
 npx mcprigor init tests/acceptance.mcpr
 npx mcprigor check tests/acceptance.mcpr
 npx mcprigor test tests/acceptance.mcpr --html report.html

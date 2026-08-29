@@ -10,7 +10,7 @@ You need Node.js 20 or 22. MCP Rigor is published on npm as [`mcprigor`](https:/
 mkdir mcp-acceptance-tests
 cd mcp-acceptance-tests
 npm init -y
-npm install --save-dev mcprigor
+npm install mcprigor
 ```
 
 To check the installation:
