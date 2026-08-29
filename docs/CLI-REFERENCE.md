@@ -139,6 +139,32 @@ mcprigor record --out draft.mcpr -- node dist/server.js
 
 Proxies a live MCP stdio session: your client (an agent, MCP Inspector's CLI mode, or any harness) talks to `mcprigor record` on stdin/stdout, and Rigor forwards everything to the real server while logging each `tools/call` exchange. When the session ends it writes a reviewable `.mcpr` draft — one test per call, with deterministic assertions picked from the actual responses (up to three scalar `structuredContent` leaves, falling back to short text content). No AI: the draft is a literal transcription. Review it, prune it, and run it.
 
+## Project environments
+
+Define shared targets once in `mcprigor.config.yaml` (found in the working directory or any parent):
+
+```yaml
+default: dev
+environments:
+  dev: node dist/server.js
+  qa:
+    url: https://qa.example.com/mcp
+    token from: node scripts/get-token.mjs
+  prod:
+    url: https://api.example.com/mcp
+    headers:
+      Authorization: "Bearer ${env.PROD_TOKEN}"
+```
+
+Then select one per run:
+
+```bash
+mcprigor test suite.mcpr --env qa
+mcprigor drift suite.mcpr --against mcp.lock.yaml --env prod
+```
+
+The selected environment replaces the suite's declared target and is announced in the output. With a `default:` set, plain `mcprigor test suite.mcpr` uses it automatically. `--command`/`--url` overrides still win over the environment when both are given. An environment value can be a command string, a URL string, or a mapping with `server`/`cwd`/`env` (stdio) or `url`/`headers`/`token from` (HTTP).
+
 ## Drift gate and flakiness
 
 CI gate for contract drift:
