@@ -44,7 +44,7 @@
 
   <section class="workbench">
     <div class="toolbar">
-      <span id="filename" class="filename">No file open</span>
+      <span id="filename" class="filename" title="Double-click to rename">No file open</span><button id="rename" class="icon" title="Rename file" hidden>✏️</button>
       <span id="dirty" class="dirty"></span>
       <span class="spacer"></span>
       <button id="save" title="Save (⌘S / Ctrl+S)">Save</button>
@@ -57,6 +57,7 @@
       <div class="editor-stack">
         <pre id="highlight" class="highlight" aria-hidden="true"><code id="highlight-code"></code></pre>
         <textarea id="editor" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Natural-language MCP test editor"></textarea>
+        <div id="suggest" class="suggest" hidden></div>
       </div>
     </div>
     <div id="welcome" class="welcome" hidden>
@@ -117,6 +118,21 @@ with their checkboxes and run them together.</span></pre>
     <div class="dialog-actions">
       <button type="button" id="new-cancel" class="ghost">Cancel</button>
       <button type="submit" class="primary" id="new-create">Create file</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="rename-dialog">
+  <form method="dialog" id="rename-form">
+    <h3>Rename file</h3>
+    <p>History and trends follow the new name automatically.</p>
+    <label for="rename-name">New file name</label>
+    <input id="rename-name" type="text" autocomplete="off" required pattern="[A-Za-z0-9][A-Za-z0-9 ._-]{0,80}">
+    <p class="dialog-hint">The extension stays the same.</p>
+    <p id="rename-error" class="dialog-error" hidden></p>
+    <div class="dialog-actions">
+      <button type="button" id="rename-cancel" class="ghost">Cancel</button>
+      <button type="submit" class="primary">Rename</button>
     </div>
   </form>
 </dialog>

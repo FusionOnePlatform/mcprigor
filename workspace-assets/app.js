@@ -59,7 +59,12 @@ function renderList() {
     name.className = 'file-name';
     name.textContent = file.path;
     button.title = file.path;
-    button.append(icon, name);
+    const rn = document.createElement('span');
+    rn.className = 'rn';
+    rn.textContent = '✏️';
+    rn.title = 'Rename';
+    rn.onclick = event => { event.stopPropagation(); openRename(file.path); };
+    button.append(icon, name, rn);
     if (file.path === state.path) button.classList.add('active');
     button.onclick = () => open(file.path).catch(show);
     row.append(check, button);
@@ -89,13 +94,150 @@ function highlightSrc(text) {
     return html;
   }).join('\n');
 }
+let errorLine = 0;
+function markErrorLine(line) { errorLine = line; syncEditor(); }
+function jumpToLine(line) {
+  const el = $('editor');
+  const index = el.value.split('\n').slice(0, line - 1).join('\n').length + (line > 1 ? 1 : 0);
+  el.focus();
+  el.setSelectionRange(index, index);
+  el.scrollTop = Math.max(0, (line - 4) * 13.5 * 1.65);
+  syncScroll();
+}
 function syncEditor() {
   const text = $('editor').value;
-  $('highlight-code').innerHTML = highlightSrc(text) + '\n';
+  const lines = highlightSrc(text).split('\n');
+  if (errorLine >= 1 && errorLine <= lines.length) lines[errorLine - 1] = `<span class="line-err">${lines[errorLine - 1] || ' '}</span>`;
+  $('highlight-code').innerHTML = lines.join('\n') + '\n';
   $('gutter').textContent = Array.from({ length: text.split('\n').length }, (_, i) => i + 1).join('\n');
   syncScroll();
 }
 function syncScroll() { $('highlight').scrollTop = $('editor').scrollTop; $('gutter').scrollTop = $('editor').scrollTop; }
+
+
+/* ---------- autocomplete ---------- */
+const SUGGESTIONS = [
+  { text: 'MCP Test 1', desc: 'Version header — first line of every file', top: true },
+  { text: 'Suite: "', desc: 'Name this suite (shown in reports and history)', top: true },
+  { text: 'Server: ', desc: 'Command that starts your MCP server, e.g. node dist/server.js', top: true },
+  { text: 'MCP URL: ', desc: 'Connect to a deployed HTTP endpoint instead', top: true },
+  { text: 'Data source: ', desc: 'CSV or XLSX file for data-driven tests', top: true },
+  { text: 'Import flows from ', desc: 'Reuse shared flows from another file', top: true },
+  { text: 'Test: "', desc: 'Start a new test with a descriptive name', top: true },
+  { text: 'Flow: "', desc: 'Define a reusable sequence of steps', top: true },
+  { text: 'Call tool "', desc: 'Invoke an MCP tool (add  with:  for arguments)' },
+  { text: 'Read resource "', desc: 'Read an MCP resource by URI' },
+  { text: 'Get prompt "', desc: 'Fetch an MCP prompt' },
+  { text: 'Send "ping"', desc: 'Protocol-level request' },
+  { text: 'Use flow "', desc: 'Run a flow defined or imported in this file' },
+  { text: 'Require: tools', desc: 'Skip this test unless the server declares the capability' },
+  { text: 'Expect "', desc: 'Assert on a response field, e.g. Expect "structuredContent.sum" equals 5' },
+  { text: 'Expect it succeeds', desc: 'Assert the call did not error' },
+  { text: 'Expect an error', desc: 'Assert the call fails' },
+  { text: 'Expect error code ', desc: 'Assert a specific JSON-RPC error code' },
+  { text: 'Expect error message matches "', desc: 'Regex match on the error message' },
+  { text: 'Save "', desc: 'Store a response field:  Save "field.path" as "name"' },
+  { text: 'Wait for notification "', desc: 'Wait for a server notification within a timeout' },
+  { text: 'Subscribe to "', desc: 'Subscribe to resource updates' },
+];
+const EXPECT_TAILS = [
+  { text: 'equals ', desc: 'Exact value match' },
+  { text: 'contains "', desc: 'Substring match' },
+  { text: 'matches "', desc: 'Regular-expression match' },
+  { text: 'exists', desc: 'Field must be present' },
+  { text: 'is a number', desc: 'Type check' },
+  { text: 'has ', desc: 'Array length, e.g. has 3 items' },
+  { text: 'does not equal ', desc: 'Negated match' },
+  { text: 'matches snapshot "', desc: 'Compare against a stored snapshot' },
+];
+let suggest = { open: false, items: [], sel: 0, from: 0 };
+
+function currentLine() {
+  const el = $('editor');
+  const upTo = el.value.slice(0, el.selectionStart);
+  const startIdx = upTo.lastIndexOf('\n') + 1;
+  return { text: upTo.slice(startIdx), startIdx, caret: el.selectionStart };
+}
+
+function computeSuggestions() {
+  const { text, startIdx } = currentLine();
+  const stripped = text.replace(/^\s+/, '');
+  const indentLen = text.length - stripped.length;
+  // After an Expect "field" — offer comparison tails
+  const tail = stripped.match(/^Expect\s+"[^"]*"\s+(\w*)$/i);
+  if (tail) {
+    const prefix = tail[1] || '';
+    const items = EXPECT_TAILS.filter(i => i.text.toLowerCase().startsWith(prefix.toLowerCase()));
+    return { items, from: startIdx + text.length - prefix.length, prefix };
+  }
+  if (!stripped.length || /["\d]/.test(stripped[0])) return { items: [], from: 0, prefix: '' };
+  const topLevel = indentLen === 0;
+  const items = SUGGESTIONS
+    .filter(i => i.text.toLowerCase().startsWith(stripped.toLowerCase()) && i.text.length > stripped.length)
+    .filter(i => topLevel ? true : !i.top);
+  return { items, from: startIdx + indentLen, prefix: stripped };
+}
+
+function renderSuggest() {
+  const box = $('suggest');
+  if (!suggest.open || !suggest.items.length) { box.hidden = true; suggest.open = false; return; }
+  box.hidden = false;
+  box.replaceChildren();
+  suggest.items.forEach((item, index) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = index === suggest.sel ? 'sel' : '';
+    const prefixLen = suggest.prefix.length;
+    button.innerHTML = `<b>${escapeHtml(item.text.slice(0, prefixLen))}</b>${escapeHtml(item.text.slice(prefixLen))}<span class="desc">${escapeHtml(item.desc)}</span>`;
+    button.onmousedown = event => { event.preventDefault(); acceptSuggestion(index); };
+    box.append(button);
+  });
+  // position under the caret line
+  const el = $('editor');
+  const lines = el.value.slice(0, el.selectionStart).split('\n');
+  const lineHeight = 13.5 * 1.65;
+  const top = Math.min((lines.length) * lineHeight - el.scrollTop + 22, el.clientHeight - 40);
+  const col = lines[lines.length - 1].length;
+  box.style.top = `${Math.max(30, top)}px`;
+  box.style.left = `${Math.min(18 + col * 8.1, el.clientWidth - 300)}px`;
+}
+
+function openSuggest() {
+  const { items, from, prefix } = computeSuggestions();
+  suggest = { open: items.length > 0, items: items.slice(0, 9), sel: 0, from, prefix };
+  renderSuggest();
+}
+function closeSuggest() { suggest.open = false; renderSuggest(); }
+function acceptSuggestion(index) {
+  const item = suggest.items[index ?? suggest.sel];
+  if (!item) return;
+  const el = $('editor');
+  el.setRangeText(item.text, suggest.from, el.selectionStart, 'end');
+  closeSuggest();
+  state.dirty = true; $('dirty').textContent = '● unsaved';
+  syncEditor();
+  el.focus();
+}
+
+/* ---------- rename ---------- */
+let renameTarget = '';
+function openRename(path) {
+  renameTarget = path;
+  const base = path.replace(/\.[^.]+$/, '');
+  $('rename-error').hidden = true;
+  $('rename-name').value = base;
+  $('rename-dialog').showModal();
+  $('rename-name').select();
+}
+async function doRename(to) {
+  const value = await api('/api/v1/rename', { method: 'POST', body: JSON.stringify({ from: renameTarget, to }) });
+  const wasOpen = state.path === renameTarget;
+  if (state.selected.has(renameTarget)) { state.selected.delete(renameTarget); state.selected.add(value.path); }
+  await refreshList();
+  if (wasOpen) { state.path = value.path; $('filename').textContent = value.path; renderList(); }
+  loadHistory().catch(() => {});
+  toast(`Renamed to ${value.path}`);
+}
 
 /* ---------- states ---------- */
 function showWelcome(on) { $('welcome').hidden = !on; setEnabled(!on && !!state.path); }
@@ -111,7 +253,8 @@ async function open(path) {
   $('filename').textContent = path;
   $('filename').classList.add('open');
   $('dirty').textContent = '';
-  showWelcome(false); setEnabled(true); renderList(); hideDiag();
+  showWelcome(false); setEnabled(true); renderList(); hideDiag(); markErrorLine(0);
+  $('rename').hidden = false;
 }
 
 async function createFile(name) {
@@ -134,8 +277,12 @@ async function validate() {
   if (!state.path) return diag('Open or create a test file first.', 'warn');
   if (state.dirty) await save(true);
   const value = await api('/api/v1/validate', { method: 'POST', body: JSON.stringify({ path: state.path }) });
-  if (value.valid) diag(`✓ Valid — ${value.suite.tests} test${value.suite.tests === 1 ? '' : 's'} ready${value.suite.parityTargets.length ? ` · ${value.suite.parityTargets.length} parity targets` : ''}. Click ▶ Run tests.`, 'ok');
-  else diag(value.diagnostics.map(x => x.message).join('\n'), 'err');
+  if (value.valid) { markErrorLine(0); diag(`✓ Valid — ${value.suite.tests} test${value.suite.tests === 1 ? '' : 's'} ready${value.suite.parityTargets.length ? ` · ${value.suite.parityTargets.length} parity targets` : ''}. Click ▶ Run tests.`, 'ok'); }
+  else {
+    const first = value.diagnostics[0];
+    diag(value.diagnostics.map(x => x.message).join('\n'), 'err');
+    if (first?.line) { markErrorLine(first.line); jumpToLine(first.line); }
+  }
 }
 
 /* ---------- runs ---------- */
@@ -349,11 +496,30 @@ $('new-form').addEventListener('submit', event => {
   });
 });
 $('new-cancel').onclick = () => $('new-dialog').close();
+$('rename-form').addEventListener('submit', event => {
+  event.preventDefault();
+  doRename($('rename-name').value.trim()).then(() => $('rename-dialog').close()).catch(error => {
+    $('rename-error').textContent = error.message;
+    $('rename-error').hidden = false;
+  });
+});
+$('rename-cancel').onclick = () => $('rename-dialog').close();
+$('rename').onclick = () => { if (state.path) openRename(state.path); };
+$('filename').ondblclick = () => { if (state.path) openRename(state.path); };
 
 /* ---------- wiring ---------- */
-$('editor').addEventListener('input', () => { state.dirty = true; $('dirty').textContent = '● unsaved'; syncEditor(); });
+$('editor').addEventListener('input', () => { state.dirty = true; $('dirty').textContent = '● unsaved'; markErrorLine(0); openSuggest(); });
+$('editor').addEventListener('blur', () => setTimeout(closeSuggest, 150));
+$('editor').addEventListener('click', closeSuggest);
 $('editor').addEventListener('scroll', syncScroll);
 $('editor').addEventListener('keydown', event => {
+  if (suggest.open) {
+    if (event.key === 'ArrowDown') { event.preventDefault(); suggest.sel = (suggest.sel + 1) % suggest.items.length; renderSuggest(); return; }
+    if (event.key === 'ArrowUp') { event.preventDefault(); suggest.sel = (suggest.sel - 1 + suggest.items.length) % suggest.items.length; renderSuggest(); return; }
+    if (event.key === 'Tab' || event.key === 'Enter') { event.preventDefault(); acceptSuggestion(); return; }
+    if (event.key === 'Escape') { closeSuggest(); return; }
+  }
+  if (event.key === ' ' && event.ctrlKey) { event.preventDefault(); openSuggest(); return; }
   if (event.key === 'Tab') {
     event.preventDefault();
     const el = $('editor');
