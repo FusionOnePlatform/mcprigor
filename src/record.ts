@@ -1,0 +1,125 @@
+import { spawn } from "node:child_process";
+import { writeFile } from "node:fs/promises";
+
+interface RecordedCall {
+  method: string;
+  name?: string;
+  args?: Record<string, unknown>;
+  response?: unknown;
+  isError?: boolean;
+}
+
+/**
+ * Record an MCP stdio session: spawn the real server, pipe the parent's stdin
+ * (an MCP client such as an agent, Inspector, or any harness) through to it,
+ * and log every request/response pair. No AI: the draft is generated from the
+ * literal traffic with deterministic assertion heuristics.
+ */
+export async function recordSession(options: { command: string; args: string[]; out: string; maxTests?: number }): Promise<{ calls: number; out: string }> {
+  const child = spawn(options.command, options.args, { stdio: ["pipe", "pipe", "inherit"] });
+  const pending = new Map<string | number, { method: string; params?: Record<string, unknown> }>();
+  const calls: RecordedCall[] = [];
+
+  const feed = (source: NodeJS.ReadableStream, onMessage: (message: Record<string, unknown>) => void, forward: NodeJS.WritableStream) => {
+    let buffer = "";
+    source.on("data", (chunk: Buffer) => {
+      forward.write(chunk);
+      buffer += chunk.toString("utf8");
+      let index;
+      while ((index = buffer.indexOf("\n")) >= 0) {
+        const line = buffer.slice(0, index).trim();
+        buffer = buffer.slice(index + 1);
+        if (!line) continue;
+        try { onMessage(JSON.parse(line) as Record<string, unknown>); } catch { /* non-JSON noise */ }
+      }
+    });
+  };
+
+  feed(process.stdin, (message) => {
+    if (message.id !== undefined && typeof message.method === "string") {
+      pending.set(message.id as string | number, { method: message.method, params: message.params as Record<string, unknown> | undefined });
+    }
+  }, child.stdin);
+
+  feed(child.stdout, (message) => {
+    if (message.id === undefined || !pending.has(message.id as string | number)) return;
+    const request = pending.get(message.id as string | number)!;
+    pending.delete(message.id as string | number);
+    if (request.method === "tools/call") {
+      const result = message.result as Record<string, unknown> | undefined;
+      calls.push({
+        method: request.method,
+        name: request.params?.name as string,
+        args: request.params?.arguments as Record<string, unknown> | undefined,
+        response: result,
+        isError: Boolean(result?.isError ?? message.error),
+      });
+    }
+  }, process.stdout);
+
+  await new Promise<void>((resolvePromise) => {
+    child.on("exit", () => resolvePromise());
+    process.stdin.on("end", () => child.stdin.end());
+  });
+
+  const draft = renderDraft(options.command, options.args, calls.slice(0, options.maxTests ?? 25));
+  await writeFile(options.out, draft, "utf8");
+  return { calls: calls.length, out: options.out };
+}
+
+function literal(value: unknown): string {
+  if (typeof value === "string") return `"${value.replace(/"/g, '\\"')}"`;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  return JSON.stringify(value);
+}
+
+/** Pick shallow, stable leaf assertions from a tool result. */
+function pickAssertions(response: unknown): string[] {
+  const lines: string[] = [];
+  const record = response as Record<string, unknown> | undefined;
+  const structured = record?.structuredContent as Record<string, unknown> | undefined;
+  if (structured) {
+    let count = 0;
+    for (const [key, value] of Object.entries(structured)) {
+      if (count >= 3) break;
+      if (value === null || typeof value === "object") continue;
+      lines.push(`  Expect "structuredContent.${key}" equals ${literal(value)}`);
+      count++;
+    }
+  }
+  if (!lines.length) {
+    const content = record?.content as Array<Record<string, unknown>> | undefined;
+    const textPart = content?.find((part) => part.type === "text" && typeof part.text === "string");
+    if (textPart && (textPart.text as string).length <= 120) lines.push(`  Expect text contains ${literal(textPart.text)}`);
+  }
+  if (!lines.length) lines.push(`  # TODO: add an assertion — the recorded result had no simple leaf values`);
+  return lines;
+}
+
+function renderDraft(command: string, args: string[], calls: RecordedCall[]): string {
+  const seen = new Map<string, number>();
+  const blocks = calls.map((call) => {
+    const base = `${call.name} works`;
+    const count = (seen.get(base) ?? 0) + 1;
+    seen.set(base, count);
+    const title = count > 1 ? `${base} (${count})` : base;
+    const lines = [`Test: "${title}"`];
+    if (call.args && Object.keys(call.args).length) {
+      lines.push(`  Call tool "${call.name}" with:`);
+      for (const [key, value] of Object.entries(call.args)) lines.push(`    ${key}: ${typeof value === "string" ? value : JSON.stringify(value)}`);
+    } else {
+      lines.push(`  Call tool "${call.name}"`);
+    }
+    if (call.isError) lines.push(`  Expect the call to fail`);
+    else lines.push(...pickAssertions(call.response));
+    return lines.join("\n");
+  });
+  return `# Draft generated by mcprigor record — review every test before trusting it.
+# Recorded ${calls.length} tools/call exchange${calls.length === 1 ? "" : "s"}; assertions are deterministic picks from the actual responses.
+MCP Test 1
+Suite: "Recorded session"
+Server: ${[command, ...args].join(" ")}
+
+${blocks.join("\n\n")}
+`;
+}

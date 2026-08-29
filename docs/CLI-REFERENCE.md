@@ -131,6 +131,14 @@ mcprigor contract-update mcp.lock.yaml --target server.mcpr
 
 Review the printed changes before committing the updated lock.
 
+## Record a session
+
+```bash
+mcprigor record --out draft.mcpr -- node dist/server.js
+```
+
+Proxies a live MCP stdio session: your client (an agent, MCP Inspector's CLI mode, or any harness) talks to `mcprigor record` on stdin/stdout, and Rigor forwards everything to the real server while logging each `tools/call` exchange. When the session ends it writes a reviewable `.mcpr` draft — one test per call, with deterministic assertions picked from the actual responses (up to three scalar `structuredContent` leaves, falling back to short text content). No AI: the draft is a literal transcription. Review it, prune it, and run it.
+
 ## Drift gate and flakiness
 
 CI gate for contract drift:
