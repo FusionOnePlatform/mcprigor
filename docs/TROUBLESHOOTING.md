@@ -203,3 +203,7 @@ Include:
 - sanitized evidence or result JSON.
 
 Do not include credentials or regulated data.
+
+## `MCP-AUTH-002 Token from command failed`
+
+The `Token from:` command exited non-zero, timed out (15 s cap), printed nothing, or printed more than a single token. Run the command by hand and confirm it prints exactly one token on stdout with no extra logging. Send diagnostics to stderr instead — Rigor only reads stdout.

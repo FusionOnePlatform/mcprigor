@@ -258,6 +258,18 @@ In CI, do the same in the workflow:
 
 Interactive browser-redirect OAuth is out of scope by design: an acceptance run must be repeatable without a human in the loop.
 
+## Fetch an OAuth token before connecting
+
+When the token is short-lived (OAuth client credentials), let the suite fetch it at run time instead of storing it anywhere:
+
+```text
+MCP URL: https://qa.example.com/mcp
+Server options:
+  Token from: node scripts/get-token.mjs
+```
+
+The command runs once before the suite connects; its output (a single token on stdout) becomes the `Authorization: Bearer …` header. The fetched token is auto-redacted from every report and evidence bundle. The command can do anything — call your identity provider, read a keychain, exchange client credentials — as long as it prints exactly one token. If it fails or prints nothing, the run stops with `MCP-AUTH-002` before any test executes.
+
 ## Match a snapshot
 
 ```text

@@ -39,7 +39,14 @@ class SdkSession implements TestSession {
       const env = this.target.env ? { ...process.env, ...this.target.env } as Record<string, string> : undefined;
       this.transport = new StdioClientTransport({ command: this.target.command, args: this.target.args, cwd: this.target.cwd, env, stderr: "pipe" });
       this.transport.stderr?.on("data", (chunk) => { if (this.diagnosticBytes >= 64 * 1024) return; const text = String(chunk).slice(0, 16 * 1024).trimEnd(); this.diagnosticBytes += Buffer.byteLength(text); this.messages.push(text); });
-    } else this.transport = new StreamableHTTPClientTransport(new URL(this.target.url), { requestInit: { headers: this.target.headers } });
+    } else {
+      let headers = this.target.headers;
+      if (this.target.tokenFrom) {
+        const token = await fetchToken(this.target.tokenFrom);
+        headers = { ...headers, Authorization: `Bearer ${token}` };
+      }
+      this.transport = new StreamableHTTPClientTransport(new URL(this.target.url), { requestInit: { headers } });
+    }
     try { await this.client.connect(this.transport, { timeout: 10_000 }); }
     catch (error) { await this.client.close().catch(() => {}); this.disposed(); const message = error instanceof Error ? error.message : String(error); if (/ENOENT|spawn/i.test(message)) throw new RigorError("server-spawn", "MCP-SPAWN-001", message, undefined, error); throw new RigorError(/timeout/i.test(message) ? "timeout" : "initialization", /timeout/i.test(message) ? "MCP-TIMEOUT-001" : "MCP-INIT-001", message, undefined, error); }
     const server = this.client.getServerVersion();
@@ -80,4 +87,22 @@ class SdkSession implements TestSession {
     this.client.setRequestHandler(ElicitRequestSchema, async () => ({ action: this.behavior.elicitation?.action ?? "decline", ...(this.behavior.elicitation?.content ? { content: this.behavior.elicitation.content } : {}) } as any));
   }
   private pushEvent(method: string, params: unknown): void { const event = { method, params, sequence: ++this.sequence }; this.nativeEvents.push(event); for (const waiter of this.waiters.filter((item) => item.method === method)) { clearTimeout(waiter.timer); waiter.resolve(structuredClone(event)); } this.waiters = this.waiters.filter((item) => item.method !== method); }
+}
+
+/** Run a token-fetch command (OAuth client-credentials helper); trimmed stdout becomes the bearer token. */
+export async function fetchToken(command: string): Promise<string> {
+  const { execFile } = await import("node:child_process");
+  const { promisify } = await import("node:util");
+  const [head, ...rest] = command.split(/\s+/).filter(Boolean);
+  if (!head) throw new RigorError("initialization", "MCP-AUTH-001", "Token from command is empty");
+  try {
+    const { stdout } = await promisify(execFile)(head, rest, { timeout: 15_000, maxBuffer: 64 * 1024 });
+    const token = stdout.trim();
+    if (!token) throw new Error("the command printed no token");
+    if (/\s/.test(token)) throw new Error("the command printed more than a single token (whitespace found)");
+    return token;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new RigorError("initialization", "MCP-AUTH-002", `Token from command failed: ${message}`, undefined, error);
+  }
 }
