@@ -23,6 +23,7 @@ Test: "Use the first test output"
 
 Test: "Use state from an earlier CLI run"
   Id: state-example
+  Skip: "Run with --state-in state.json to enable this test (see docs/DATA-AND-REUSE.md)"
 
   Call tool "add" with:
     a: "${state.startingValue}"

@@ -1,3 +1,4 @@
+import YAML from "yaml";
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { mkdir, readFile, readdir, realpath, rename, stat, writeFile } from "node:fs/promises";
@@ -15,6 +16,9 @@ export interface WorkspaceOptions { root?: string; host?: string; port?: number 
 interface WorkspaceRunItem { suite: string; status: "running" | "passed" | "failed"; output: string; error?: string; startedAt: string; durationMs?: number; tests?: Array<{ name: string; status: string; durationMs: number; error?: string }> }
 interface WorkspaceRun { id: string; mode: string; status: "running" | "passed" | "failed"; startedAt: string; items: WorkspaceRunItem[] }
 export interface HistoryEntry { at: string; mode: string; suite: string; status: "passed" | "failed"; durationMs: number; tests: Array<{ name: string; status: string; durationMs: number; error?: string }> }
+/** Files that share suite extensions but are never test suites. */
+const NON_SUITE_FILES = new Set(["package.json", "package-lock.json", "tsconfig.json", "mcprigor.config.yaml", "mcprigor.config.yml"]);
+const NON_SUITE_PATTERNS = [/\.lock\.(yaml|yml|json)$/i, /\.snap\.json$/i, /-state\.json$/i, /\.config\.(yaml|yml|json)$/i];
 const TEXT_EXTENSIONS = new Set([".mcpr", ".yaml", ".yml", ".json", ".csv"]);
 
 export async function startWorkspace(options: WorkspaceOptions = {}): Promise<{ url: string; close(): Promise<void> }> {
@@ -57,8 +61,17 @@ export async function startWorkspace(options: WorkspaceOptions = {}): Promise<{ 
   const address = server.address(); const port = typeof address === "object" && address ? address.port : options.port; return { url: `http://${host}:${port}`, close: () => new Promise((resolveClose, reject) => server.close((error) => error ? reject(error) : resolveClose())) };
 }
 
-export async function suites(root: string): Promise<Array<{ path: string; name: string }>> { const files: string[] = []; async function walk(dir: string, depth: number): Promise<void> { let items; try { items = await readdir(dir, { withFileTypes: true }); } catch { return; } for (const item of items) { if (item.name.startsWith(".") || ["node_modules", "dist", "Library", "Applications"].includes(item.name)) continue; const full = join(dir, item.name); if (item.isDirectory()) { if (depth < 6) await walk(full, depth + 1); } else if ([".mcpr", ".yaml", ".yml", ".json"].includes(extname(item.name)) && !["package.json", "package-lock.json", "tsconfig.json"].includes(item.name)) files.push(relative(root, full)); if (files.length >= 200) return; } } await walk(root, 0); return files.sort().map((path) => ({ path, name: basename(path) })); }
+export async function suites(root: string): Promise<Array<{ path: string; name: string }>> { const files: string[] = []; async function walk(dir: string, depth: number): Promise<void> { let items; try { items = await readdir(dir, { withFileTypes: true }); } catch { return; } for (const item of items) { if (item.name.startsWith(".") || ["node_modules", "dist", "Library", "Applications"].includes(item.name)) continue; const full = join(dir, item.name); if (item.isDirectory()) { if (depth < 6) await walk(full, depth + 1); } else if (extname(item.name) === ".mcpr") files.push(relative(root, full)); else if ([".yaml", ".yml", ".json"].includes(extname(item.name)) && !NON_SUITE_FILES.has(item.name) && !NON_SUITE_PATTERNS.some((pattern) => pattern.test(item.name)) && await looksLikeSuite(full)) files.push(relative(root, full)); if (files.length >= 200) return; } } await walk(root, 0); return files.sort().map((path) => ({ path, name: basename(path) })); }
 export function safePath(root: string, input: string): string { if (!input || input.includes("\0") || input.includes("\\") || input.startsWith("/") || /^[A-Za-z]:/.test(input)) throw new Error("MCP-WEB-002 Invalid workspace path"); const output = resolve(root, input); if (output !== root && !output.startsWith(root + sep)) throw new Error("MCP-WEB-003 Path leaves workspace"); if (!TEXT_EXTENSIONS.has(extname(output))) throw new Error("MCP-WEB-004 Unsupported file type"); return output; }
+/** Cheap structural check: list a YAML/JSON file as a suite only when it has the suite shape (version 1 + target + tests). */
+async function looksLikeSuite(file: string): Promise<boolean> {
+  try {
+    const source = await readFile(file, "utf8");
+    if (source.length > 1024 * 1024) return false;
+    const value = (file.endsWith(".json") ? JSON.parse(source) : YAML.parse(source)) as Record<string, unknown> | null;
+    return !!value && typeof value === "object" && !Array.isArray(value) && value.version === 1 && Array.isArray(value.tests) && typeof value.target === "object";
+  } catch { return false; }
+}
 export async function limitedRead(path: string): Promise<string> { const info = await stat(path); if (info.size > 1024 * 1024) throw new Error("MCP-WEB-005 File exceeds 1 MiB"); return readFile(path, "utf8"); }
 export async function atomicWrite(path: string, text: string): Promise<void> { await mkdir(dirname(path), { recursive: true }); const temp = `${path}.${randomBytes(6).toString("hex")}.tmp`; await writeFile(temp, text, { mode: 0o600 }); await rename(temp, path); }
 const HISTORY_LIMIT = 2000;

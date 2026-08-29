@@ -2,11 +2,10 @@ MCP Test 1
 
 Suite: "Complete plain-language MCP suite"
 
-Compare target "Local": node server.js
+Compare target "Local": node --import tsx tests/fixtures/server.ts
 Compare target "QA": https://qa.example.com/mcp
 
 Target options for "Local":
-  cwd: ./server
   env:
     MODE: test
 
