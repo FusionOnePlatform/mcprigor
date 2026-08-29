@@ -90,6 +90,12 @@ Start the local browser interface:
 npx mcprigor workspace .
 ```
 
+Or expose MCP Rigor to AI coding agents as an MCP server ([docs](docs/MCP-SERVER.md)):
+
+```bash
+npx mcprigor serve .
+```
+
 Open the printed `http://127.0.0.1:...` URL. You can select a suite, edit it, validate the wording, run tests, run transport parity, and review results.
 
 The workspace is loopback-only and does not accept arbitrary commands from the browser.

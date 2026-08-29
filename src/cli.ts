@@ -23,6 +23,7 @@ const removeSignalCleanup = installSignalCleanup();
 async function main(): Promise<void> {
   const [command, file, ...flags] = process.argv.slice(2);
   if (!command || command === "--help" || command === "-h") return help();
+  if (command === "serve" || command === "mcp") { const { startMcpServer } = await import("./mcp-server.js"); await startMcpServer({ root: file && !file.startsWith("--") ? file : process.cwd() }); return new Promise<void>(() => {}); }
   if (command === "workspace" || command === "web") { const workspace = await startWorkspace({ root: file && !file.startsWith("--") ? file : process.cwd(), port: numericFlag([file ?? "", ...flags], "--port") }); console.log(`MCP Rigor QA Workspace\n${workspace.url}\n\nPress Ctrl+C to stop.`); return new Promise<void>(() => {}); }
   const compileOptions = { allowRemoteData: flags.includes("--allow-remote-data"), allowCustomCode: flags.includes("--allow-custom-code"), maxRows: numericFlag(flags, "--max-rows") };
   if (command === "snapshot-diff") { if (!file || !flags[0]) throw new UsageError("snapshot-diff requires two JSON files"); const { semanticDiff, renderSemanticDiff } = await import("./snapshots.js"); const changes = semanticDiff(JSON.parse(await readFile(file, "utf8")), JSON.parse(await readFile(flags[0], "utf8"))); console.log(changes.length ? renderSemanticDiff(changes) : "Snapshots are semantically identical."); process.exitCode = changes.length ? 1 : 0; return; }
@@ -137,6 +138,8 @@ function help(): void {
 Start here:
   mcprigor workspace [DIRECTORY] [--port 4173]
                                       Open the local QA web workspace
+  mcprigor serve [DIRECTORY]          Expose MCP Rigor as an MCP server (stdio)
+                                      so AI agents can write and run tests
   mcprigor init my-tests.mcpr       Create an editable example
   mcprigor check my-tests.mcpr      Check the wording before running
   mcprigor test my-tests.mcpr       Run the tests
