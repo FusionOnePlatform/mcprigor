@@ -43,6 +43,12 @@ Check that the stdio server:
 
 For HTTP, verify the URL, authentication, and server logs.
 
+For token-protected endpoints:
+
+- `Environment variable not found: QA_TOKEN` — export the variable before running, or set it in the CI step's `env:` block.
+- `MCP-INIT-001 Streamable HTTP error … unauthorized` — the token was sent but rejected; check its value, expiry, and audience. The server's own response body is included in the message.
+- Tokens and header values are redacted from reports and evidence automatically; do not paste them into test files to "make them visible".
+
 ## A field was not found
 
 Example:
