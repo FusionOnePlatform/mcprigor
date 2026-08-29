@@ -141,3 +141,7 @@ blockquote { border-left: 4px solid var(--violet); background: var(--panel); mar
   .sidebar { position: static; height: auto; }
   .docs .content { padding: 22px; }
 }
+
+.demo{text-align:center;margin:3rem auto;max-width:1000px;padding:0 1rem}
+.demo h2{margin-bottom:1rem}
+.demo-video{width:100%;max-width:960px;border-radius:12px;border:1px solid rgba(127,127,127,.25);box-shadow:0 12px 40px rgba(0,0,0,.35);display:block;margin:0 auto}
