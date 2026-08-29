@@ -21,7 +21,6 @@ const DESCRIPTIONS = {
   "engineer-setup": "Configure MCP Rigor targets, credentials, repository layout, GitHub Actions CI, contract drift checks, and transport parity for your team.",
   "cli-reference": "Complete MCP Rigor CLI reference: init, check, test, author, parity, discover, contract-check, evidence, snapshots, replay, options, and exit codes.",
   "language-spec": "The complete deterministic MCP Rigor natural-language (.mcpr) syntax reference: every statement, assertion, and rule.",
-  "file-extension": "Why MCP Rigor uses the .mcpr file extension instead of .mcp, and how to migrate existing test files.",
   "data-and-reuse": "Data-driven MCP testing with reusable flows, built-in utilities, CSV, JSON, Excel, REST, and Google Sheets data sources.",
   "data-engineering": "Advanced MCP Rigor test data: typed columns, filters, joins, derived values, seeded sampling, and caching.",
   "state-and-dependencies": "Share outputs between MCP Rigor tests and runs with dependencies, exports, and persisted state.",
@@ -34,8 +33,6 @@ const DESCRIPTIONS = {
   "error-model": "MCP Rigor's stable error taxonomy: categorized failure codes with actionable explanations for QA and CI triage.",
   "security-and-retention": "MCP Rigor security model: secret redaction, parser and network limits, extension isolation, and evidence retention policy.",
   "compatibility": "MCP Rigor compatibility: Node 20/22, Linux/macOS/Windows, MCP protocol revisions, and transport matrix.",
-  "specification": "The MCP Rigor runtime and product specification: normative behavior, execution model, and protocol obligations.",
-  "landscape": "How MCP Rigor compares to MCP Inspector, official conformance, and other MCP testing tools.",
 };
 
 // Answer-engine FAQ used for on-page content and FAQPage JSON-LD.
@@ -63,7 +60,6 @@ const NAV = [
     ["ENGINEER-SETUP", "Engineer setup & CI"],
     ["CLI-REFERENCE", "CLI reference"],
     ["LANGUAGE-SPEC", "Language reference"],
-    ["FILE-EXTENSION", "The .mcpr extension"],
     ["DATA-AND-REUSE", "Data & reusable flows"],
     ["DATA-ENGINEERING", "Data engineering"],
     ["STATE-AND-DEPENDENCIES", "State & dependencies"],
@@ -80,10 +76,6 @@ const NAV = [
     ["ERROR-MODEL", "Error model"],
     ["SECURITY-AND-RETENTION", "Security & retention"],
     ["COMPATIBILITY", "Compatibility"],
-  ]},
-  { section: "Background", pages: [
-    ["SPECIFICATION", "Specification"],
-    ["LANDSCAPE", "Landscape"],
   ]},
 ];
 
@@ -289,6 +281,7 @@ const LANDING = `
 </section>
 <section class="grid">
   <div class="card"><h3>For QA</h3><p>Write tests that read like acceptance criteria in a local browser workspace with autocomplete, batch runs, run history, and pass-rate trends.</p></div>
+  <div class="card"><h3>For AI agents</h3><p>Expose MCP Rigor as an <a href="./docs/mcp-server.html">MCP server</a> with <code>mcprigor serve</code> — coding agents write, validate, and run deterministic tests for the MCP servers they build.</p></div>
   <div class="card"><h3>For developers</h3><p>Contract locks with SHA-256 fingerprints, classified drift reports, sanitized traces, semantic snapshots, and stable error codes.</p></div>
   <div class="card"><h3>For product owners</h3><p>Readable tests double as living acceptance criteria, and evidence bundles prove what was tested, against which server, and when.</p></div>
   <div class="card"><h3>Transport parity</h3><p>Run the same scenario against a local stdio server and a deployed Streamable HTTP endpoint and see exactly where behavior differs.</p></div>
@@ -300,8 +293,9 @@ const LANDING = `
   <pre><code>npm install mcprigor
 npx mcprigor init tests/acceptance.mcpr
 npx mcprigor check tests/acceptance.mcpr
-npx mcprigor test tests/acceptance.mcpr --html report.html</code></pre>
-  <p>Published on <a href="https://www.npmjs.com/package/mcprigor" target="_blank" rel="noopener">npm</a> with compiled code — no build from source. Tests use the <a href="./docs/file-extension.html"><code>.mcpr</code> extension</a> and compile to the same runtime model as YAML.</p>
+npx mcprigor test tests/acceptance.mcpr --html report.html
+npx mcprigor serve .   # expose as an MCP server for AI agents</code></pre>
+  <p>Published on <a href="https://www.npmjs.com/package/mcprigor" target="_blank" rel="noopener">npm</a> with compiled code — no build from source. Tests use the <code>.mcpr</code> extension and compile to the same runtime model as YAML.</p>
 </section>
 <section class="loopiq">
   <h2>Backed by LoopIQ</h2>

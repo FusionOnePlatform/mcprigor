@@ -246,7 +246,6 @@ See the [complete CLI reference](docs/CLI-REFERENCE.md).
 - **Setting up targets and CI:** [Engineer setup](docs/ENGINEER-SETUP.md)
 - **Fixing failures:** [Troubleshooting](docs/TROUBLESHOOTING.md)
 - **All documentation:** [Documentation index](docs/README.md)
-- **Renaming old files:** [`.mcpr` extension and migration](docs/FILE-EXTENSION.md)
 
 ## Scope and safety
 
