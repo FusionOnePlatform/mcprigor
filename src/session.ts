@@ -10,6 +10,7 @@ import type { ClientBehavior, NativeEvent, NativeRequestOptions, NativeRequestRe
 import { RigorError } from "./errors.js";
 import { accessSync, constants } from "node:fs";
 import { delimiter, isAbsolute, join as joinPath, resolve as resolvePath } from "node:path";
+import { FRAMEWORK_VERSION } from "./version.js";
 
 function assertCommandExists(command: string, cwd?: string): void {
   const extensions = process.platform === "win32" ? (process.env.PATHEXT ?? ".COM;.EXE;.BAT;.CMD").split(";").map((e) => e.toLowerCase()).concat("") : [""];
@@ -25,7 +26,7 @@ export async function shutdownSessions(): Promise<void> { await Promise.allSettl
 export function installSignalCleanup(): () => void { const handler = () => { void shutdownSessions().finally(() => { process.exitCode = 130; }); }; process.once("SIGINT", handler); process.once("SIGTERM", handler); return () => { process.off("SIGINT", handler); process.off("SIGTERM", handler); }; }
 
 class SdkSession implements TestSession {
-  private readonly client = new Client({ name: "mcprigor", version: "1.0.0-rc.1" }, { capabilities: { roots: { listChanged: true }, sampling: {}, elicitation: { form: {}, url: {} } } as any });
+  private readonly client = new Client({ name: "mcprigor", version: FRAMEWORK_VERSION }, { capabilities: { roots: { listChanged: true }, sampling: {}, elicitation: { form: {}, url: {} } } as any });
   private readonly messages: string[] = []; private diagnosticBytes = 0; private readonly nativeEvents: NativeEvent[] = []; private sequence = 0;
   private behavior: ClientBehavior = {}; private transport?: StdioClientTransport | StreamableHTTPClientTransport;
   private waiters: Array<{ method: string; resolve: (event: NativeEvent) => void; reject: (error: Error) => void; timer: NodeJS.Timeout }> = [];

@@ -1,6 +1,6 @@
 {
   "name": "mcprigor",
-  "version": "1.0.0-rc.4",
+  "version": "1.0.0",
   "description": "Plain-language MCP testing with isolated extensions and a local QA workspace",
   "type": "module",
   "bin": {

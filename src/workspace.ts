@@ -9,6 +9,7 @@ import { parityReport, runParity } from "./parity.js";
 import { terminalReport } from "./reporters.js";
 import { runSuite } from "./runner.js";
 import type { RunResult } from "./types.js";
+import { FRAMEWORK_VERSION } from "./version.js";
 
 export interface WorkspaceOptions { root?: string; host?: string; port?: number }
 interface WorkspaceRunItem { suite: string; status: "running" | "passed" | "failed"; output: string; error?: string; startedAt: string; durationMs?: number; tests?: Array<{ name: string; status: string; durationMs: number; error?: string }> }
@@ -26,7 +27,7 @@ export async function startWorkspace(options: WorkspaceOptions = {}): Promise<{ 
     const url = new URL(req.url ?? "/", `http://${req.headers.host}`); const method = req.method ?? "GET";
     if (method !== "GET" && !authorized(req, csrf, `http://${req.headers.host}`)) return json(res, 403, { error: { code: "MCP-WEB-403", message: "Invalid workspace origin or CSRF token" } });
     if (url.pathname === "/" || url.pathname === "/app.js" || url.pathname === "/style.css") return asset(res, join(assets, url.pathname === "/" ? "index.html" : url.pathname.slice(1)));
-    if (url.pathname === "/api/v1/bootstrap") return json(res, 200, { version: "1.0.0-rc.4", root: basename(root), csrf, capabilities: ["edit", "validate", "test", "parity", "evidence", "snapshots", "contracts"] });
+    if (url.pathname === "/api/v1/bootstrap") return json(res, 200, { version: FRAMEWORK_VERSION, root: basename(root), csrf, capabilities: ["edit", "validate", "test", "parity", "evidence", "snapshots", "contracts"] });
     if (url.pathname === "/api/v1/suites" && method === "GET") return json(res, 200, { suites: await suites(root) });
     if (url.pathname === "/api/v1/file" && method === "GET") { const path = safePath(root, url.searchParams.get("path") ?? ""); const text = await limitedRead(path); return json(res, 200, { path: relative(root, path), text, etag: etag(text) }); }
     if (url.pathname === "/api/v1/file" && method === "POST") { const body = await bodyJson(req) as any; const name = typeof body?.name === "string" ? body.name.trim() : ""; if (!/^[A-Za-z0-9][A-Za-z0-9 ._-]{0,80}$/.test(name)) return json(res, 400, { error: { code: "MCP-WEB-400", message: "File name may use letters, numbers, spaces, dots, dashes, and underscores" } }); const fileName = name.endsWith(".mcpr") ? name : `${name}.mcpr`; const path = safePath(root, fileName); const exists = await stat(path).then(() => true).catch(() => false); if (exists) return json(res, 409, { error: { code: "MCP-WEB-409", message: `${fileName} already exists. Pick another name.` } }); await atomicWrite(path, starterTemplate); return json(res, 201, { path: relative(root, path) }); }

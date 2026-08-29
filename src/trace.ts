@@ -3,6 +3,7 @@ import { basename, join, resolve } from "node:path";
 import { canonicalize, fingerprint } from "./canonical.js";
 import { createRedactor, type Redactor } from "./redact.js";
 import type { RunResult, SessionInfo, Target, TestSession } from "./types.js";
+import { FRAMEWORK_VERSION } from "./version.js";
 
 export type TraceEventType = "session.connect.start" | "session.connect.success" | "request" | "response" | "error" | "session.close" | "diagnostic";
 export interface TraceEvent { schemaVersion: 1; sequence: number; elapsedMs: number; type: TraceEventType; testId?: string; step?: string; requestId?: string; method?: string; data?: unknown }
@@ -41,7 +42,7 @@ export async function writeEvidenceBundle(directory: string, result: RunResult, 
   const raw = recorder.events.map((event) => JSON.stringify(event)).join("\n") + "\n";
   const normalizedEvents = recorder.normalized(); const normalized = normalizedEvents.map((event) => JSON.stringify(event)).join("\n") + "\n";
   const files = { result: "result.json", trace: "trace.jsonl", normalizedTrace: "trace.normalized.jsonl", manifest: "manifest.json" };
-  const manifestCore = { schemaVersion: 1 as const, frameworkVersion: "1.0.0-rc.1", createdAt: new Date().toISOString(), suiteName: result.suiteName, status: result.status, resultHash: result.evidenceHash, traceHash: fingerprint(recorder.events), normalizedTraceHash: fingerprint(normalizedEvents), files, target: { transport: target.transport } };
+  const manifestCore = { schemaVersion: 1 as const, frameworkVersion: FRAMEWORK_VERSION, createdAt: new Date().toISOString(), suiteName: result.suiteName, status: result.status, resultHash: result.evidenceHash, traceHash: fingerprint(recorder.events), normalizedTraceHash: fingerprint(normalizedEvents), files, target: { transport: target.transport } };
   const manifest: EvidenceManifest = manifestCore;
   await Promise.all([writeFile(join(root, files.result), JSON.stringify(result, null, 2) + "\n"), writeFile(join(root, files.trace), raw), writeFile(join(root, files.normalizedTrace), normalized), writeFile(join(root, files.manifest), JSON.stringify(manifest, null, 2) + "\n")]);
   return manifest;
