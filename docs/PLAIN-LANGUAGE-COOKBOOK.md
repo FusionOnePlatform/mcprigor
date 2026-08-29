@@ -185,6 +185,79 @@ Test: "Search behaves the same"
 
 Run with `mcprigor parity FILE`.
 
+## Test a server that needs a bearer token
+
+Point the suite at the deployed endpoint and pass the token through an environment variable. Never paste a real token into a test file.
+
+```text
+MCP Test 1
+Suite: "Deployed order service"
+MCP URL: https://qa.example.com/mcp
+
+Server options:
+  headers:
+    Authorization: "Bearer ${env.QA_TOKEN}"
+
+Test: "an authenticated call succeeds"
+  Call tool "find_order" with:
+    orderId: "A-1001"
+  Expect "structuredContent.status" equals "shipped"
+```
+
+Run it with the token in the environment:
+
+```bash
+QA_TOKEN=... mcprigor test orders.mcpr
+```
+
+Three guarantees come with this pattern:
+
+- if `QA_TOKEN` is not set, the run stops with `Environment variable not found: QA_TOKEN` instead of sending an empty header;
+- header values are registered with the redactor automatically, so the token never appears in reports or evidence bundles;
+- a wrong or expired token surfaces the server's own response (for example `{"error":"unauthorized"}`) in the failure message.
+
+Any header works the same way — `X-Api-Key`, custom tenant headers, and so on.
+
+## Compare an open local server with a protected deployment
+
+Parity targets accept per-target options, so the local build can run without auth while the deployed target sends the token:
+
+```text
+Compare target "Local": node dist/server.js
+Compare target "QA": https://qa.example.com/mcp
+
+Target options for "QA":
+  headers:
+    Authorization: "Bearer ${env.QA_TOKEN}"
+
+Test: "Search behaves the same"
+  Call tool "search" with:
+    query: "red shoes"
+  Expect "structuredContent.total" equals 2
+```
+
+## When the token must be fetched first
+
+MCP Rigor does not perform OAuth login flows or token exchanges itself; tests stay deterministic and secrets stay outside test files. When a short-lived token must be acquired (client-credentials exchange, cloud CLI, vault), fetch it in the step before the run:
+
+```bash
+QA_TOKEN=$(curl -s -X POST https://auth.example.com/oauth/token \
+  -d grant_type=client_credentials \
+  -d client_id="$CLIENT_ID" -d client_secret="$CLIENT_SECRET" | jq -r .access_token)
+QA_TOKEN=$QA_TOKEN mcprigor test orders.mcpr
+```
+
+In CI, do the same in the workflow:
+
+```yaml
+- name: Acceptance tests
+  env:
+    QA_TOKEN: ${{ secrets.QA_TOKEN }}
+  run: npx mcprigor test tests/*.mcpr
+```
+
+Interactive browser-redirect OAuth is out of scope by design: an acceptance run must be repeatable without a human in the loop.
+
 ## Match a snapshot
 
 ```text
