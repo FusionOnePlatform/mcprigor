@@ -28,6 +28,15 @@
       <button id="refresh" class="icon" title="Refresh list" aria-label="Refresh list">↻</button>
     </div>
     <nav id="suites" aria-label="Test suites"></nav>
+    <div id="batch-bar" class="batch-bar" hidden>
+      <span id="batch-count"></span>
+      <div class="batch-actions">
+        <button id="batch-validate" title="Validate selected files">Validate</button>
+        <button id="batch-parity" title="Run parity on selected files">Parity</button>
+        <button id="batch-run" class="primary" title="Run tests in selected files">▶ Run</button>
+      </div>
+      <button id="batch-clear" class="ghost small">Clear selection</button>
+    </div>
     <div class="sidebar-foot">
       <a href="https://mcprigor.com/docs/plain-language-cookbook.html" target="_blank" rel="noreferrer">📖 Cookbook — copy-ready examples</a>
     </div>
@@ -67,12 +76,28 @@
   </section>
 
   <aside class="results">
-    <div class="results-head">
-      <h2>Run results</h2>
+    <div class="results-tabs" role="tablist">
+      <button id="tab-run" class="tab active" role="tab" aria-selected="true">Run</button>
+      <button id="tab-history" class="tab" role="tab" aria-selected="false">History</button>
+      <button id="tab-trends" class="tab" role="tab" aria-selected="false">Trends</button>
+      <span class="spacer"></span>
       <span id="run-badge" class="badge" hidden></span>
     </div>
-    <pre id="output" class="output"><span class="muted">Nothing has run yet.
-Open a test file and click ▶ Run tests.</span></pre>
+    <div class="results-search">
+      <input id="results-filter" type="search" placeholder="Search tests and results…" aria-label="Search tests and results">
+    </div>
+    <div id="panel-run" class="panel" role="tabpanel">
+      <div id="run-list"></div>
+      <pre id="output" class="output"><span class="muted">Nothing has run yet.
+Open a test file and click ▶ Run tests — or select several files
+with their checkboxes and run them together.</span></pre>
+    </div>
+    <div id="panel-history" class="panel" role="tabpanel" hidden>
+      <div id="history-list" class="history-list"><p class="muted pad">No runs recorded yet. History appears after the first ▶ Run.</p></div>
+    </div>
+    <div id="panel-trends" class="panel" role="tabpanel" hidden>
+      <div id="trends" class="trends"><p class="muted pad">Trends appear after a few runs.</p></div>
+    </div>
   </aside>
 </main>
 
