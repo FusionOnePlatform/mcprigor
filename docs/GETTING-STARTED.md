@@ -88,7 +88,7 @@ Open `report.html` or attach it to a ticket.
 npx mcprigor workspace .
 ```
 
-Open the printed local URL. Select `calculator.mcpr`, edit it, choose **Validate**, then **Run tests**.
+Open the printed local URL. Select `calculator.mcpr` — the editor gives you syntax highlighting and autocomplete — then choose **Validate** and **▶ Run tests**. You can also create new test files, run several suites at once with the checkboxes, and review run history and trends in the results panel. See the [QA workspace guide](QA-WORKSPACE.md).
 
 ## If you do not know tool names
 
