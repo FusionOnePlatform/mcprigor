@@ -131,6 +131,31 @@ mcprigor contract-update mcp.lock.yaml --target server.mcpr
 
 Review the printed changes before committing the updated lock.
 
+## Drift gate and flakiness
+
+CI gate for contract drift:
+
+```bash
+mcprigor drift suite.mcpr --against mcp.lock.yaml --fail-on breaking
+```
+
+Compares the lock file against the live server the suite declares and classifies every change as breaking, potentially breaking, or non-breaking. `--fail-on` controls the gate: `breaking` (default), `potentially-breaking`, `any`, or `none` (report only). `--json out.json` writes the structured diff; `--markdown` renders for PR comments. In GitHub Actions each change becomes an `::error`/`::warning`/`::notice` annotation automatically.
+
+Detect flaky tests from recorded run history:
+
+```bash
+mcprigor flaky [DIRECTORY] [--window 200] [--json out.json]
+```
+
+A test is flaky when its pass/fail outcome flips between runs of the same suite. CLI runs, the QA workspace, and `mcprigor serve` all record history under `.mcprigor/workspace-history.jsonl`. Exit code 1 when flaky tests are found. Pair with:
+
+```bash
+mcprigor test suite.mcpr --retries 2      # retry failures up to 2 times
+mcprigor test suite.mcpr --quarantine     # skip tests listed in .mcprigor/quarantine.txt
+```
+
+Quarantine file format: one `suite.mcpr :: test name` per line, `#` comments allowed. Tests that pass only on retry are marked `retried` in JSON reports so hidden flakiness stays visible.
+
 ## Evidence
 
 ```bash
