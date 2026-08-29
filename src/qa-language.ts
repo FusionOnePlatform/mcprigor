@@ -82,7 +82,17 @@ export function compileQaLanguage(source: string, file = "test.mcpr"): Suite {
       step = { name: `Wait for notification “${match[1]}”`, native: { action: "await-notification", method: match[1]!, timeoutMs: match[2] ? Number(match[2]) * 1000 : 5000 }, phase, always: phase === "cleanup" };
       test.steps.push(step); continue;
     }
-    if ((match = line.match(/^Subscribe to resource\s+["']([^"']+)["']$/i))) { step = { name: `Subscribe to “${match[1]}”`, native: { action: "subscribe", uri: match[1]! }, phase }; test.steps.push(step); continue; }
+    if ((match = line.match(/^When the server asks for input,\s*respond\s+["'](accept|decline|cancel)["'](\s+with:)?\s*$/i))) {
+      const action = match[1]!.toLowerCase() as "accept" | "decline" | "cancel";
+      let content: Record<string, string | number | boolean | string[]> | undefined;
+      if (match[2]) { const block = readIndentedMap(lines, index, file); index = block.lastLine; content = block.value as Record<string, string | number | boolean | string[]>; }
+      if (content && action !== "accept") fail(file, lineNumber, "Only an 'accept' response can include a 'with:' block of field values.");
+      step = { name: `Respond to elicitation with ${action}`, native: { action: "configure-client", behavior: { elicitation: { action, ...(content ? { content } : {}) } } }, phase }; test.steps.push(step); continue;
+    }
+    if ((match = line.match(/^When the server requests sampling,\s*respond\s+["']([^"']*)["']\s*$/i))) {
+      step = { name: "Respond to sampling with a scripted message", native: { action: "configure-client", behavior: { sampling: { model: "mcprigor-scripted", text: match[1]! } } }, phase }; test.steps.push(step); continue;
+    }
+        if ((match = line.match(/^Subscribe to resource\s+["']([^"']+)["']$/i))) { step = { name: `Subscribe to “${match[1]}”`, native: { action: "subscribe", uri: match[1]! }, phase }; test.steps.push(step); continue; }
     if ((match = line.match(/^Unsubscribe from resource\s+["']([^"']+)["']$/i))) { step = { name: `Unsubscribe from “${match[1]}”`, native: { action: "unsubscribe", uri: match[1]! }, phase, always: phase === "cleanup" }; test.steps.push(step); continue; }
     if ((match = line.match(/^Set log level to\s+["']?([^"']+)["']?$/i))) { step = { name: `Set log level to ${match[1]}`, native: { action: "set-log-level", level: match[1]!.trim() }, phase }; test.steps.push(step); continue; }
     if ((match = line.match(/^Call tool\s+["']([^"']+)["']\s+with progress(?:\s+and cancel after\s+(\d+)\s+ms)?(?:\s+with:)?$/i))) {

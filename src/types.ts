@@ -62,7 +62,7 @@ export interface UtilityStep extends StepLifecycle {
 export interface NativeStep extends StepLifecycle {
   name?: string;
   native: {
-    action: "request" | "await-notification" | "subscribe" | "unsubscribe" | "set-log-level" | "list-all" | "task-get" | "task-list" | "task-cancel";
+    action: "request" | "await-notification" | "subscribe" | "unsubscribe" | "set-log-level" | "list-all" | "task-get" | "task-list" | "task-cancel" | "configure-client";
     behavior?: ClientBehavior;
     method?: string; params?: unknown; uri?: string; level?: string; field?: string;
     timeoutMs?: number; progress?: boolean; cancelAfterMs?: number; taskId?: string;
