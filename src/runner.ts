@@ -10,6 +10,7 @@ import type { RunResult, SessionInfo, StepResult, Suite, TestCase, TestResult, T
 
 export interface RunOptions {
   filter?: string; sessionFactory?: typeof createSession; allowCustomCode?: boolean;
+  retries?: number; quarantine?: Array<{ suite: string; test: string }>; suitePath?: string;
   functionTimeoutMs?: number; cwd?: string; state?: Record<string, unknown>;
   trace?: TraceRecorder;
   snapshotFile?: string;
@@ -47,12 +48,23 @@ export async function runSuite(suite: Suite, options: RunOptions = {}): Promise<
       const result: TestResult = { id, name: test.name, status: "skipped", durationMs: 0, steps: [], ...(typeof test.skip === "string" ? { error: test.skip } : {}) };
       tests.push(result); resultsById.set(id, result); continue;
     }
+    if (options.quarantine?.some((entry) => entry.test === test.name && (!options.suitePath || entry.suite === options.suitePath))) {
+      const result: TestResult = { id, name: test.name, status: "skipped", durationMs: 0, steps: [], error: "MCP-FLAKY-001 Quarantined as flaky; remove from .mcprigor/quarantine.txt to re-enable" };
+      tests.push(result); resultsById.set(id, result); continue;
+    }
     const dependencyVariables = Object.fromEntries((test.dependsOn ?? []).flatMap((dependency) => dependencyOutputEntries(dependency, resultsById)));
     traceContext = { testId: id };
-    const baseSession = (options.sessionFactory ?? createSession)(resolvedTarget);
-    const session = options.trace ? traceSession(baseSession, options.trace, () => traceContext) : baseSession;
-    session.configureClient?.(suite.client ?? {});
-    const outcome = await runTest(suite, test, session, protocolVersions, redactor, functions, options.functionTimeoutMs, { state: expandDotted(options.state ?? {}), deps: dependencyVariables }, (step) => { traceContext = { testId: id, step }; }, snapshots);
+    const attempts = Math.max(1, Math.min(5, (options.retries ?? 0) + 1));
+    let outcome: Awaited<ReturnType<typeof runTest>> | undefined;
+    for (let attempt = 1; attempt <= attempts; attempt++) {
+      const baseSession = (options.sessionFactory ?? createSession)(resolvedTarget);
+      const session = options.trace ? traceSession(baseSession, options.trace, () => traceContext) : baseSession;
+      session.configureClient?.(suite.client ?? {});
+      outcome = await runTest(suite, test, session, protocolVersions, redactor, functions, options.functionTimeoutMs, { state: expandDotted(options.state ?? {}), deps: dependencyVariables }, (step) => { traceContext = { testId: id, step }; }, snapshots);
+      if (outcome.result.status !== "failed" || attempt === attempts) break;
+    }
+    if (!outcome) continue;
+    if (attempts > 1 && outcome.result.status === "passed") outcome.result.retried = true;
     server ??= outcome.info ? { name: outcome.info.serverName, version: outcome.info.serverVersion, capabilities: outcome.info.capabilities } : undefined;
     tests.push(outcome.result); resultsById.set(id, outcome.result);
   }
