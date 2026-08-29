@@ -23,6 +23,12 @@ export async function runSuite(suite: Suite, options: RunOptions = {}): Promise<
   const protocolVersions = new Set<string>();
   const resolvedTarget = replaceVariables(suite.target, { state: options.state ?? {} }) as Suite["target"];
   if (options.cwd && resolvedTarget.transport === "stdio" && !resolvedTarget.cwd) resolvedTarget.cwd = options.cwd;
+  if (resolvedTarget.transport === "streamable-http" && resolvedTarget.tokenFrom) {
+    const { fetchToken } = await import("./session.js");
+    const token = await fetchToken(resolvedTarget.tokenFrom);
+    resolvedTarget.headers = { ...resolvedTarget.headers, Authorization: `Bearer ${token}` };
+    delete resolvedTarget.tokenFrom;
+  }
   const redactor = createRedactor([...(suite.redact ?? []), ...collectTargetSecrets(resolvedTarget)]);
   const snapshots = new SnapshotStore({ file: options.snapshotFile ?? suite.snapshots?.file ?? "mcprigor.snap.json", update: options.updateSnapshots, ignore: suite.snapshots?.ignore });
   await snapshots.load();

@@ -10,6 +10,8 @@ export interface HttpTarget {
   transport: "streamable-http";
   url: string;
   headers?: Record<string, string>;
+  /** Command executed before connect; its trimmed stdout becomes the Authorization bearer token. Keeps secrets out of suite files. */
+  tokenFrom?: string;
 }
 
 export type Target = StdioTarget | HttpTarget;

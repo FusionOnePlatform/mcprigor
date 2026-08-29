@@ -66,3 +66,33 @@ describe("bearer-token HTTP targets", () => {
     await expect(async () => runSuite(await loadTestFile(file))).rejects.toThrow(/Environment variable not found: RIGOR_TEST_TOKEN/);
   }, 30000);
 });
+
+describe("Token from: client-credentials helper", () => {
+  it("runs the token command before connect and redacts the fetched token", async () => {
+    const token = "cc-secret-token-98765";
+    const url = await startProtectedServer(token);
+    const dir = await mkdtemp(join(tmpdir(), "rigor-tokenfrom-"));
+    cleanups.push(() => rm(dir, { recursive: true, force: true }));
+    const script = join(dir, "get-token.mjs");
+    await writeFile(script, `process.stdout.write(${JSON.stringify(token)});`);
+    const file = join(dir, "suite.mcpr");
+    await writeFile(file, `MCP Test 1\nSuite: "Token helper"\nMCP URL: ${url}\nServer options:\n  Token from: node ${script}\n\nTest: "authenticated call"\n  Call tool "whoami"\n  Expect "structuredContent.authenticated" equals true\n`);
+    const suite = await loadTestFile(file);
+    expect((suite.target as { tokenFrom?: string }).tokenFrom).toContain("get-token.mjs");
+    const result = await runSuite(suite, {});
+    expect(result.status).toBe("passed");
+    expect(JSON.stringify(result)).not.toContain(token);
+  }, 30000);
+
+  it("fails with MCP-AUTH-002 when the token command prints nothing", async () => {
+    const url = await startProtectedServer("whatever");
+    const dir = await mkdtemp(join(tmpdir(), "rigor-tokenfrom-"));
+    cleanups.push(() => rm(dir, { recursive: true, force: true }));
+    const script = join(dir, "empty.mjs");
+    await writeFile(script, "");
+    const file = join(dir, "suite.mcpr");
+    await writeFile(file, `MCP Test 1\nSuite: "Token helper"\nMCP URL: ${url}\nServer options:\n  Token from: node ${script}\n\nTest: "call"\n  Call tool "whoami"\n  Expect "structuredContent.authenticated" equals true\n`);
+    const suite = await loadTestFile(file);
+    await expect(runSuite(suite, {})).rejects.toThrow(/MCP-AUTH-002/);
+  }, 30000);
+});

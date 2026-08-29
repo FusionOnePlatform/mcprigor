@@ -36,14 +36,14 @@ export function compileQaLanguage(source: string, file = "test.mcpr"): Suite {
     if ((match = line.match(/^Target options for\s+["']([^"']+)["']:\s*$/i))) {
       const selected = targets[match[1]!]; if (!selected) fail(file, lineNumber, `Unknown parity target “${match[1]}”. Declare it first.`);
       const block = readIndentedMap(lines, index, file); index = block.lastLine;
-      Object.assign(selected, selected.transport === "stdio" ? { cwd: block.value.cwd, env: block.value.env } : { headers: block.value.headers }); continue;
+      Object.assign(selected, selected.transport === "stdio" ? { cwd: block.value.cwd, env: block.value.env } : { headers: block.value.headers, ...tokenFromOption(block.value as Record<string, unknown>) }); continue;
     }
     if ((match = line.match(/^Default timeout:\s*(\d+)\s*(ms|seconds?)$/i))) { defaults = { timeoutMs: match[2]!.toLowerCase().startsWith("s") ? Number(match[1]) * 1000 : Number(match[1]) }; continue; }
     if ((match = line.match(/^Redact:\s*(.+)$/i))) { redact = match[1]!.split(",").map((item) => unquote(item.trim())).filter(Boolean); continue; }
     if ((match = line.match(/^Snapshots:\s*(.+)$/i))) { snapshots = { file: unquote(match[1]!) }; continue; }
     if ((match = line.match(/^Ignore snapshot paths:\s*(.+)$/i))) { snapshots = { ...(snapshots ?? {}), ignore: match[1]!.split(",").map((item) => unquote(item.trim())) }; continue; }
     if (/^Client behavior:\s*$/i.test(line)) { const block = readIndentedMap(lines, index, file); index = block.lastLine; client = block.value as Suite["client"]; continue; }
-    if ((match = line.match(/^Server options:\s*$/i))) { if (!target) fail(file, lineNumber, "Declare Server or MCP URL before Server options."); const block = readIndentedMap(lines, index, file); index = block.lastLine; Object.assign(target, target.transport === "stdio" ? { cwd: block.value.cwd, env: block.value.env } : { headers: block.value.headers }); continue; }
+    if ((match = line.match(/^Server options:\s*$/i))) { if (!target) fail(file, lineNumber, "Declare Server or MCP URL before Server options."); const block = readIndentedMap(lines, index, file); index = block.lastLine; Object.assign(target, target.transport === "stdio" ? { cwd: block.value.cwd, env: block.value.env } : { headers: block.value.headers, ...tokenFromOption(block.value as Record<string, unknown>) }); continue; }
     if ((match = line.match(/^Server:\s*(.+)$/i))) {
       const words = splitCommand(match[1]!, file, lineNumber);
       if (!words.length) fail(file, lineNumber, "Write a command after 'Server:'.");
@@ -206,6 +206,11 @@ function unquote(value: string): string {
   const text = value.trim();
   return (text.startsWith('"') && text.endsWith('"')) || (text.startsWith("'") && text.endsWith("'")) ? text.slice(1, -1) : text;
 }
+function tokenFromOption(value: Record<string, unknown>): { tokenFrom?: string } {
+  const raw = value["Token from"] ?? value["token from"];
+  return typeof raw === "string" && raw.trim() ? { tokenFrom: raw.trim() } : {};
+}
+
 function readIndentedMap(lines: string[], start: number, file: string): { value: Record<string, unknown>; lastLine: number } {
   const parentIndent = lines[start]!.match(/^\s*/)?.[0].length ?? 0;
   const block: string[] = [];
