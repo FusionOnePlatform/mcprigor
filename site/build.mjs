@@ -15,6 +15,7 @@ const DESCRIPTIONS = {
   "natural-language-cookbook": "Copy-ready natural-language test examples for MCP servers: tool calls, assertions, errors, variables, cleanup, flows, CSV data, snapshots, and parity.",
   "qa-guide": "Everyday MCP Rigor checklist for QA authors: test structure, actions, expectations, variables, setup and cleanup, and good practices.",
   "qa-workspace": "Run MCP Rigor in a local browser workspace: create, edit, validate, and batch-run natural-language MCP test suites with autocomplete, run history, and trends.",
+  "mcp-server": "Expose MCP Rigor over the Model Context Protocol so AI coding agents can write, validate, and run deterministic natural-language tests for the MCP servers they build.",
   "guided-authoring": "Generate MCP tests without writing them: MCP Rigor's guided author discovers a live server's tools and builds a reviewable natural-language test.",
   "troubleshooting": "Fix common MCP Rigor failures: server spawn errors, initialization timeouts, missing fields, skipped tests, data loading, and snapshot changes.",
   "engineer-setup": "Configure MCP Rigor targets, credentials, repository layout, GitHub Actions CI, contract drift checks, and transport parity for your team.",
@@ -54,6 +55,7 @@ const NAV = [
     ["PLAIN-LANGUAGE-COOKBOOK", "Natural-language cookbook"],
     ["QA-GUIDE", "QA guide"],
     ["QA-WORKSPACE", "QA workspace"],
+    ["MCP-SERVER", "MCP server for AI agents"],
     ["GUIDED-AUTHORING", "Guided authoring"],
     ["TROUBLESHOOTING", "Troubleshooting"],
   ]},
@@ -394,7 +396,7 @@ ${NAV.flatMap(({ section, pages }) => pages.map(([doc, label]) => `- [${label}](
 - Natural-language tests compile deterministically; the same sentence always produces the same test.
 - Test files use the .mcpr extension (not .mcp, which conflicts with other software).
 - Transports: local stdio subprocess and deployed Streamable HTTP.
-- CLI: init, check, test, author, parity, workspace, discover, generate, contract-check, contract-diff, contract-update, evidence-show, evidence-compare, snapshot-diff, replay.
+- CLI: init, check, test, author, parity, workspace, serve (MCP server for AI agents), discover, generate, contract-check, contract-diff, contract-update, evidence-show, evidence-compare, snapshot-diff, replay.
 - Safety: remote data and custom extensions are opt-in; reports are sanitized and secrets redacted.
 - Browser QA workspace (mcprigor workspace): create/rename/edit suites with syntax highlighting and autocomplete, batch-run up to 20 suites, persistent run history with pass-rate trends and full-text search.
 - Complements MCP Inspector and official MCP Conformance; not a certification program.
