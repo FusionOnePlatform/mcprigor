@@ -15,7 +15,6 @@ Choose the path that matches your role.
 - [Engineer setup](ENGINEER-SETUP.md) — targets, credentials, project layout, and CI.
 - [CLI reference](CLI-REFERENCE.md) — commands, options, outputs, and exit codes.
 - [Language reference](LANGUAGE-SPEC.md) — complete deterministic `.mcpr` syntax.
-- [File extension and migration](FILE-EXTENSION.md) — why MCP Rigor uses `.mcpr`.
 - [State and dependencies](STATE-AND-DEPENDENCIES.md) — share outputs across tests and runs.
 - [Data engineering](DATA-ENGINEERING.md) — types, filters, joins, samples, and caches.
 - [Transport parity](TRANSPORT-PARITY.md) — compare stdio and Streamable HTTP.
@@ -38,8 +37,6 @@ Choose the path that matches your role.
 
 These documents explain product design and research rather than everyday usage:
 
-- [Specification](SPECIFICATION.md)
-- [Competitive landscape](LANDSCAPE.md)
 
 ## Fastest adoption path
 
@@ -53,3 +50,4 @@ npx mcprigor init tests/acceptance.mcpr
 npx mcprigor check tests/acceptance.mcpr
 npx mcprigor test tests/acceptance.mcpr --html report.html
 ```
+- [MCP server for AI agents](MCP-SERVER.md) — let coding agents write, validate, and run tests over MCP.
