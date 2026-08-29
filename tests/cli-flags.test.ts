@@ -68,3 +68,28 @@ describe("cli target overrides and flags", () => {
     expect(result.out).toContain("--watch cannot be combined");
   }, 60000);
 });
+
+describe("mcprigor drift gate", () => {
+  const lock = `version: 1\nserver:\n  name: stub\n  version: 1.0.0\n  capabilities: {}\nprotocolVersion: 2025-06-18\ncontractSha256: none\ntools:\n  - name: vanished\n    description: old\nresources: []\nresourceTemplates: []\nprompts: []\n`;
+
+  it("fails on breaking drift by default and annotates in CI", async () => {
+    const root = await fixture();
+    await writeFile(join(root, "suite2.mcpr"), `MCP Test 1\nSuite: "S2"\nServer: node good-server.mjs\n\nTest: "ping"\n  Call tool "ping"\n  Expect "structuredContent.ok" equals true\n`);
+    await writeFile(join(root, "mcp.lock.yaml"), lock);
+    const result = await run(root, ["drift", "suite2.mcpr", "--against", "mcp.lock.yaml"], { GITHUB_ACTIONS: "true" });
+    expect(result.code).toBe(1);
+    expect(result.out).toContain("Drift gate failed");
+    expect(result.out).toMatch(/::error title=MCP drift MCP-DRIFT-100::.*vanished/);
+  }, 60000);
+
+  it("--fail-on none reports drift without failing; bad value rejected", async () => {
+    const root = await fixture();
+    await writeFile(join(root, "suite2.mcpr"), `MCP Test 1\nSuite: "S2"\nServer: node good-server.mjs\n\nTest: "ping"\n  Call tool "ping"\n  Expect "structuredContent.ok" equals true\n`);
+    await writeFile(join(root, "mcp.lock.yaml"), lock);
+    const ok = await run(root, ["drift", "suite2.mcpr", "--against", "mcp.lock.yaml", "--fail-on", "none"]);
+    expect(ok.code).toBe(0);
+    expect(ok.out).toContain("within the allowed gate");
+    const bad = await run(root, ["drift", "suite2.mcpr", "--against", "mcp.lock.yaml", "--fail-on", "sometimes"]);
+    expect(bad.out).toContain("--fail-on must be one of");
+  }, 60000);
+});

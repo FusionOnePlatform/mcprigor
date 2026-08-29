@@ -114,6 +114,8 @@ export interface TestResult {
   steps: StepResult[];
   outputs?: Record<string, unknown>;
   error?: string;
+  /** True when the test passed only after one or more retries (flakiness signal). */
+  retried?: boolean;
 }
 
 export interface ServerEvidence {

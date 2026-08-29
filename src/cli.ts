@@ -61,6 +61,32 @@ async function main(): Promise<void> {
     console.log(`✓ ${file} looks good and is ready to run`);
     return;
   }
+  if (command === "drift") {
+    assertKnownFlags(flags, ["--against", "--fail-on", "--markdown", "--json", "--out", "--github-annotations", "--allow-remote-data", "--allow-custom-code", "--max-rows"]);
+    const lockFile = requiredFlag(flags, "--against");
+    const failOn = flag(flags, "--fail-on") ?? "breaking";
+    if (!["breaking", "potentially-breaking", "any", "none"].includes(failOn)) throw new UsageError(`--fail-on must be one of: breaking, potentially-breaking, any, none (got ${failOn})`);
+    const suite = await loadTestFile(resolve(file), compileOptions);
+    const checked = await checkContract(resolve(lockFile), suite.target);
+    const diff = checked.diff;
+    console.log(flags.includes("--markdown") ? contractMarkdown(diff) : contractReport(diff));
+    const jsonOut = flag(flags, "--json");
+    if (jsonOut) await writeFile(jsonOut, JSON.stringify({ lock: lockFile, failOn, ...diff }, null, 2) + "\n", "utf8");
+    if (flags.includes("--github-annotations") || process.env.GITHUB_ACTIONS === "true") {
+      const esc = (value: string) => value.replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
+      for (const item of diff.changes) {
+        const kind = item.severity === "breaking" ? "error" : item.severity === "potentially-breaking" ? "warning" : "notice";
+        console.log(`::${kind} title=${esc(`MCP drift ${item.code}`)}::${esc(item.message)}`);
+      }
+    }
+    const gate = failOn === "none" ? false
+      : failOn === "any" ? diff.status === "changed"
+      : failOn === "potentially-breaking" ? diff.breaking + diff.potentiallyBreaking > 0
+      : diff.breaking > 0;
+    if (gate) console.log(`\nDrift gate failed (--fail-on ${failOn}).`);
+    else if (diff.status === "changed") console.log(`\nDrift detected but within the allowed gate (--fail-on ${failOn}).`);
+    process.exitCode = gate ? 1 : 0; return;
+  }
   if (command === "contract-check") {
     const suite = await loadTestFile(resolve(requiredFlag(flags, "--target")), compileOptions);
     const checked = await checkContract(resolve(file), suite.target);
@@ -90,9 +116,21 @@ async function main(): Promise<void> {
     console.log(`✓ Created ready-to-run contract tests in ${output}`);
     return;
   }
+  if (command === "flaky") {
+    assertKnownFlags(flags, ["--window", "--json"]);
+    const { analyzeFlakiness, flakyReport, loadHistoryFor } = await import("./flaky.js");
+    const root = file && !file.startsWith("--") ? resolve(file) : process.cwd();
+    const entries = await loadHistoryFor(root);
+    if (!entries.length) { console.log(`No run history found under ${root}/.mcprigor/. Run tests first (CLI runs, the QA workspace, and mcprigor serve all record history).`); return; }
+    const data = analyzeFlakiness(entries, numericFlag(flags, "--window") ?? 200);
+    console.log(flakyReport(data));
+    const jsonOut = flag(flags, "--json");
+    if (jsonOut) await writeFile(jsonOut, JSON.stringify(data, null, 2) + "\n", "utf8");
+    process.exitCode = data.tests.length ? 1 : 0; return;
+  }
   if (command !== "run" && command !== "test") throw new UsageError(`Unknown command: ${command}. Try: mcprigor --help`);
 
-  assertKnownFlags(flags, ["--test", "--html", "--json", "--junit", "--evidence", "--snapshot", "--update-snapshots", "--state-in", "--state-out", "--allow-state-target-mismatch", "--allow-remote-data", "--allow-custom-code", "--max-rows", "--command", "--url", "--watch", "--github-annotations", "--no-github-annotations"]);
+  assertKnownFlags(flags, ["--test", "--html", "--json", "--junit", "--evidence", "--snapshot", "--update-snapshots", "--state-in", "--state-out", "--allow-state-target-mismatch", "--allow-remote-data", "--allow-custom-code", "--max-rows", "--command", "--url", "--watch", "--github-annotations", "--no-github-annotations", "--retries", "--quarantine"]);
   const suite = await loadTestFile(resolve(file), compileOptions);
   applyTargetOverride(suite, flag(flags, "--command"), flag(flags, "--url"));
   const filter = flag(flags, "--test");
@@ -102,7 +140,16 @@ async function main(): Promise<void> {
   const trace = evidenceDirectory ? new TraceRecorder(createRedactor([...(suite.redact ?? []), ...collectTargetSecrets(suite.target)])) : undefined;
   const snapshotFile = flag(flags, "--snapshot");
   if (flags.includes("--update-snapshots") && !snapshotFile && !suite.snapshots?.file) throw new UsageError("--update-snapshots requires --snapshot FILE or suite snapshot configuration");
-  const runOnce = async (loadedSuite = suite) => runSuite(loadedSuite, { ...(filter ? { filter } : {}), allowCustomCode: compileOptions.allowCustomCode, cwd: process.cwd(), state: loadedState?.outputs, trace, snapshotFile, updateSnapshots: flags.includes("--update-snapshots") });
+  const retries = numericFlag(flags, "--retries");
+  const quarantine = flags.includes("--quarantine") ? await (await import("./flaky.js")).readQuarantine(resolve(".mcprigor")) : undefined;
+  const suiteRelative = file;
+  const runOnce = async (loadedSuite = suite) => {
+    const result = await runSuite(loadedSuite, { ...(filter ? { filter } : {}), allowCustomCode: compileOptions.allowCustomCode, cwd: process.cwd(), state: loadedState?.outputs, trace, snapshotFile, updateSnapshots: flags.includes("--update-snapshots"), ...(retries ? { retries } : {}), ...(quarantine ? { quarantine, suitePath: suiteRelative } : {}) });
+    const { appendHistory } = await import("./workspace.js");
+    const { join: joinPath } = await import("node:path");
+    await appendHistory(joinPath(process.cwd(), ".mcprigor", "workspace-history.jsonl"), { at: new Date().toISOString(), mode: "test", suite: suiteRelative, status: result.status, durationMs: result.durationMs, tests: result.tests.map((t) => ({ name: t.name, status: t.status, durationMs: t.durationMs, ...(t.error ? { error: t.error } : {}) })) });
+    return result;
+  };
   if (flags.includes("--watch")) {
     if (flags.includes("--update-snapshots")) throw new UsageError("--watch cannot be combined with --update-snapshots; update snapshots in a single explicit run");
     return watchAndRun(resolve(file), suite, compileOptions, runOnce);
@@ -123,7 +170,7 @@ async function main(): Promise<void> {
   process.exitCode = result.status === "passed" ? 0 : 1;
 }
 
-const VALUE_FLAGS = new Set(["--test", "--html", "--json", "--junit", "--evidence", "--snapshot", "--state-in", "--state-out", "--max-rows", "--command", "--url", "--out", "--target", "--timeout", "--allow-tool", "--port"]);
+const VALUE_FLAGS = new Set(["--test", "--html", "--json", "--junit", "--evidence", "--snapshot", "--state-in", "--state-out", "--max-rows", "--command", "--url", "--out", "--target", "--timeout", "--allow-tool", "--port", "--retries", "--window"]);
 function assertKnownFlags(args: string[], known: string[]): void {
   const knownSet = new Set(known);
   for (let index = 0; index < args.length; index++) {
@@ -221,6 +268,10 @@ Start here:
   mcprigor test my-tests.mcpr --url https://qa.example.com/mcp
   mcprigor test my-tests.mcpr --watch
                                       Rerun on test or server file changes
+  mcprigor test my-tests.mcpr --retries 2 [--quarantine]
+                                      Retry failures; skip quarantined tests
+  mcprigor flaky [DIRECTORY] [--window 200] [--json out.json]
+                                      Detect pass/fail flips from run history
   mcprigor author server.mcpr --out new-test.mcpr
                                       Guided no-code test creation
 
@@ -241,6 +292,9 @@ Cross-test and cross-run state:
   --allow-state-target-mismatch  Accept reviewed state from another target
 
 Contract drift:
+  mcprigor drift suite.mcpr --against mcp.lock.yaml [--fail-on breaking]
+                                      CI gate: fail-on breaking (default),
+                                      potentially-breaking, any, or none
   mcprigor contract-check mcp.lock.yaml --target server.mcpr [--markdown]
   mcprigor contract-diff old.lock.yaml new.lock.yaml [--markdown]
   mcprigor contract-update mcp.lock.yaml --target server.mcpr
