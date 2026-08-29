@@ -14,7 +14,7 @@ const DESCRIPTIONS = {
   "getting-started": "Install MCP Rigor and run your first natural-language MCP server test in five minutes. Step-by-step setup for QA teams and developers.",
   "natural-language-cookbook": "Copy-ready natural-language test examples for MCP servers: tool calls, assertions, errors, variables, cleanup, flows, CSV data, snapshots, and parity.",
   "qa-guide": "Everyday MCP Rigor checklist for QA authors: test structure, actions, expectations, variables, setup and cleanup, and good practices.",
-  "qa-workspace": "Run MCP Rigor in a local browser workspace: edit, validate, and execute natural-language MCP test suites without a terminal.",
+  "qa-workspace": "Run MCP Rigor in a local browser workspace: create, edit, validate, and batch-run natural-language MCP test suites with autocomplete, run history, and trends.",
   "guided-authoring": "Generate MCP tests without writing them: MCP Rigor's guided author discovers a live server's tools and builds a reviewable natural-language test.",
   "troubleshooting": "Fix common MCP Rigor failures: server spawn errors, initialization timeouts, missing fields, skipped tests, data loading, and snapshot changes.",
   "engineer-setup": "Configure MCP Rigor targets, credentials, repository layout, GitHub Actions CI, contract drift checks, and transport parity for your team.",
@@ -286,7 +286,7 @@ const LANDING = `
   <p class="hero-note">No test code. No AI interpretation. The same sentence always compiles into the same test.</p>
 </section>
 <section class="grid">
-  <div class="card"><h3>For QA</h3><p>Write tests that read like acceptance criteria, use the guided no-code wizard, or edit and run suites in a local browser workspace.</p></div>
+  <div class="card"><h3>For QA</h3><p>Write tests that read like acceptance criteria in a local browser workspace with autocomplete, batch runs, run history, and pass-rate trends.</p></div>
   <div class="card"><h3>For developers</h3><p>Contract locks with SHA-256 fingerprints, classified drift reports, sanitized traces, semantic snapshots, and stable error codes.</p></div>
   <div class="card"><h3>For product owners</h3><p>Readable tests double as living acceptance criteria, and evidence bundles prove what was tested, against which server, and when.</p></div>
   <div class="card"><h3>Transport parity</h3><p>Run the same scenario against a local stdio server and a deployed Streamable HTTP endpoint and see exactly where behavior differs.</p></div>
@@ -396,6 +396,7 @@ ${NAV.flatMap(({ section, pages }) => pages.map(([doc, label]) => `- [${label}](
 - Transports: local stdio subprocess and deployed Streamable HTTP.
 - CLI: init, check, test, author, parity, workspace, discover, generate, contract-check, contract-diff, contract-update, evidence-show, evidence-compare, snapshot-diff, replay.
 - Safety: remote data and custom extensions are opt-in; reports are sanitized and secrets redacted.
+- Browser QA workspace (mcprigor workspace): create/rename/edit suites with syntax highlighting and autocomplete, batch-run up to 20 suites, persistent run history with pass-rate trends and full-text search.
 - Complements MCP Inspector and official MCP Conformance; not a certification program.
 `);
 
