@@ -279,13 +279,35 @@ const LANDING = `
   Expect "structuredContent.status" equals "active"</code></pre>
   <p class="hero-note">No test code. No AI interpretation. The same sentence always compiles into the same test.</p>
 </section>
-<section class="demo">
+<section class="demos">
   <h2>See it run</h2>
-  <video class="demo-video" autoplay loop muted playsinline preload="metadata" aria-label="Terminal demo: a natural-language test file, then mcprigor check and mcprigor test with passing results">
-    <source src="./assets/demo.mp4" type="video/mp4">
-    <img src="./assets/demo.gif" alt="Terminal demo: a natural-language test file, then mcprigor check and mcprigor test with passing results" loading="lazy">
-  </video>
-  <p class="hero-note">A real run: the test file, <code>mcprigor check</code>, then <code>mcprigor test</code> against a live MCP server.</p>
+  <p class="demo-intro">From visual QA to agent-driven testing — every path uses the same deterministic runtime.</p>
+  <div class="demo-grid">
+    <article class="demo-card demo-featured">
+      <h3>Visual QA workspace</h3>
+      <p>Author with autocomplete, select multiple suites, run a batch, then inspect results, history, and trends.</p>
+      <video class="demo-video" autoplay loop muted playsinline preload="metadata" aria-label="MCP Rigor visual QA workspace demo">
+        <source src="./assets/workspace-demo.mp4" type="video/mp4">
+        <img src="./assets/workspace-demo.gif" alt="MCP Rigor visual QA workspace demo" loading="lazy">
+      </video>
+    </article>
+    <article class="demo-card">
+      <h3>MCP server for AI agents</h3>
+      <p>An agent connects to <code>mcprigor serve</code>, validates a suite, runs it, and receives structured results.</p>
+      <video class="demo-video" autoplay loop muted playsinline preload="metadata" aria-label="MCP Rigor MCP server agent demo">
+        <source src="./assets/mcp-server-demo.mp4" type="video/mp4">
+        <img src="./assets/mcp-server-demo.gif" alt="MCP Rigor MCP server agent demo" loading="lazy">
+      </video>
+    </article>
+    <article class="demo-card">
+      <h3>CLI and CI</h3>
+      <p>Check deterministic wording, then run the suite against a live MCP server from any terminal or pipeline.</p>
+      <video class="demo-video" autoplay loop muted playsinline preload="metadata" aria-label="MCP Rigor CLI demo">
+        <source src="./assets/demo.mp4" type="video/mp4">
+        <img src="./assets/demo.gif" alt="MCP Rigor CLI demo" loading="lazy">
+      </video>
+    </article>
+  </div>
 </section>
 <section class="grid">
   <div class="card"><h3>For QA</h3><p>Write tests that read like acceptance criteria in a local browser workspace with autocomplete, batch runs, run history, and pass-rate trends.</p></div>
