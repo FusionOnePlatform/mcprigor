@@ -13,7 +13,7 @@ npm install --save-dev mcprigor
 For reproducible CI runs, pin an exact version in `package.json` and update it deliberately:
 
 ```json
-{ "devDependencies": { "mcprigor": "1.0.0-rc.2" } }
+{ "devDependencies": { "mcprigor": "1.0.0-rc.3" } }
 ```
 
 Release notes and tarball checksums for each version are on the [GitHub releases page](https://github.com/FusionOnePlatform/mcprigor/releases).

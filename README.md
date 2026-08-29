@@ -11,7 +11,7 @@
 
 MCP Rigor lets QA teams test MCP tools, resources, prompts, contracts, and transports without writing test code. Tests are deterministic: no AI model interprets the wording. Plain-language files use `.mcpr` to avoid collision with existing `.mcp` formats.
 
-> Status: `1.0.0-rc.2` release candidate. Node.js 20 or 22 is required.
+> Status: `1.0.0-rc.3` release candidate. Node.js 20 or 22 is required.
 
 ## Install
 
