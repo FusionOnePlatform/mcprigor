@@ -279,6 +279,14 @@ const LANDING = `
   Expect "structuredContent.status" equals "active"</code></pre>
   <p class="hero-note">No test code. No AI interpretation. The same sentence always compiles into the same test.</p>
 </section>
+<section class="demo">
+  <h2>See it run</h2>
+  <video class="demo-video" autoplay loop muted playsinline preload="metadata" aria-label="Terminal demo: a natural-language test file, then mcprigor check and mcprigor test with passing results">
+    <source src="./assets/demo.mp4" type="video/mp4">
+    <img src="./assets/demo.gif" alt="Terminal demo: a natural-language test file, then mcprigor check and mcprigor test with passing results" loading="lazy">
+  </video>
+  <p class="hero-note">A real run: the test file, <code>mcprigor check</code>, then <code>mcprigor test</code> against a live MCP server.</p>
+</section>
 <section class="grid">
   <div class="card"><h3>For QA</h3><p>Write tests that read like acceptance criteria in a local browser workspace with autocomplete, batch runs, run history, and pass-rate trends.</p></div>
   <div class="card"><h3>For AI agents</h3><p>Expose MCP Rigor as an <a href="./docs/mcp-server.html">MCP server</a> with <code>mcprigor serve</code> — coding agents write, validate, and run deterministic tests for the MCP servers they build.</p></div>
