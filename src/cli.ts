@@ -7,14 +7,14 @@ import { checkContract, compareContracts, contractMarkdown, contractReport, read
 import { discoverTarget, generateSuite, writeGeneratedSuite, writeLock } from "./discovery.js";
 import { loadTestFile } from "./qa-loader.js";
 import { parityMarkdown, parityReport, runParity } from "./parity.js";
-import { terminalReport, writeHtmlReport, writeJsonReport, writeJunitReport } from "./reporters.js";
+import { githubAnnotations, terminalReport, writeHtmlReport, writeJsonReport, writeJunitReport } from "./reporters.js";
 import { runSuite } from "./runner.js";
 import { replayReport, replayTrace } from "./replay.js";
 import { readState, writeState } from "./state.js";
 import { compareEvidence, showEvidence, TraceRecorder, writeEvidenceBundle } from "./trace.js";
 import { collectTargetSecrets, createRedactor } from "./redact.js";
 import { writeStarter } from "./starter.js";
-import type { DiscoveryDocument } from "./types.js";
+import type { DiscoveryDocument, Suite } from "./types.js";
 import { startWorkspace } from "./workspace.js";
 import { installSignalCleanup } from "./session.js";
 import { formatFailure } from "./errors.js";
@@ -92,7 +92,9 @@ async function main(): Promise<void> {
   }
   if (command !== "run" && command !== "test") throw new UsageError(`Unknown command: ${command}. Try: mcprigor --help`);
 
+  assertKnownFlags(flags, ["--test", "--html", "--json", "--junit", "--evidence", "--snapshot", "--update-snapshots", "--state-in", "--state-out", "--allow-state-target-mismatch", "--allow-remote-data", "--allow-custom-code", "--max-rows", "--command", "--url", "--watch", "--github-annotations", "--no-github-annotations"]);
   const suite = await loadTestFile(resolve(file), compileOptions);
+  applyTargetOverride(suite, flag(flags, "--command"), flag(flags, "--url"));
   const filter = flag(flags, "--test");
   const stateIn = flag(flags, "--state-in");
   const loadedState = stateIn ? await readState(resolve(stateIn), suite.target, flags.includes("--allow-state-target-mismatch")) : undefined;
@@ -100,11 +102,17 @@ async function main(): Promise<void> {
   const trace = evidenceDirectory ? new TraceRecorder(createRedactor([...(suite.redact ?? []), ...collectTargetSecrets(suite.target)])) : undefined;
   const snapshotFile = flag(flags, "--snapshot");
   if (flags.includes("--update-snapshots") && !snapshotFile && !suite.snapshots?.file) throw new UsageError("--update-snapshots requires --snapshot FILE or suite snapshot configuration");
-  const result = await runSuite(suite, { ...(filter ? { filter } : {}), allowCustomCode: compileOptions.allowCustomCode, cwd: process.cwd(), state: loadedState?.outputs, trace, snapshotFile, updateSnapshots: flags.includes("--update-snapshots") });
+  const runOnce = async (loadedSuite = suite) => runSuite(loadedSuite, { ...(filter ? { filter } : {}), allowCustomCode: compileOptions.allowCustomCode, cwd: process.cwd(), state: loadedState?.outputs, trace, snapshotFile, updateSnapshots: flags.includes("--update-snapshots") });
+  if (flags.includes("--watch")) {
+    if (flags.includes("--update-snapshots")) throw new UsageError("--watch cannot be combined with --update-snapshots; update snapshots in a single explicit run");
+    return watchAndRun(resolve(file), suite, compileOptions, runOnce);
+  }
+  const result = await runOnce();
   console.log(terminalReport(result));
   const json = flag(flags, "--json");
   const junit = flag(flags, "--junit");
   const html = flag(flags, "--html");
+  if (flags.includes("--github-annotations") || (process.env.GITHUB_ACTIONS === "true" && !flags.includes("--no-github-annotations"))) console.log("\n" + githubAnnotations(result, file));
   if (json) await writeJsonReport(result, json);
   if (junit) await writeJunitReport(result, junit);
   if (html) { await writeHtmlReport(result, html); console.log(`\nReadable report: ${html}`); }
@@ -113,6 +121,70 @@ async function main(): Promise<void> {
   if (stateOut && result.status === "passed") { await writeState(resolve(stateOut), suite.target, suite, result.outputs); console.log(`\nSaved reusable outputs: ${stateOut}`); }
   else if (stateOut) console.log("\nState was not saved because the run did not pass.");
   process.exitCode = result.status === "passed" ? 0 : 1;
+}
+
+const VALUE_FLAGS = new Set(["--test", "--html", "--json", "--junit", "--evidence", "--snapshot", "--state-in", "--state-out", "--max-rows", "--command", "--url", "--out", "--target", "--timeout", "--allow-tool", "--port"]);
+function assertKnownFlags(args: string[], known: string[]): void {
+  const knownSet = new Set(known);
+  for (let index = 0; index < args.length; index++) {
+    const value = args[index]!;
+    if (!value.startsWith("--")) continue;
+    if (!knownSet.has(value)) throw new UsageError(`Unknown option for this command: ${value}. Run mcprigor --help to see supported options.`);
+    if (VALUE_FLAGS.has(value)) index++;
+  }
+}
+function applyTargetOverride(suite: { target: Suite["target"] }, command?: string, url?: string): void {
+  if (command && url) throw new UsageError("Use either --command or --url, not both");
+  if (command) {
+    const [head, ...rest] = command.split(/\s+/).filter(Boolean);
+    if (!head) throw new UsageError("--command requires a non-empty server command");
+    suite.target = { transport: "stdio", command: head, args: rest };
+    console.log(`Target override: running against command "${command}" instead of the suite's declared target.\n`);
+  } else if (url) {
+    suite.target = { transport: "streamable-http", url };
+    console.log(`Target override: running against ${url} instead of the suite's declared target.\n`);
+  }
+}
+
+async function watchAndRun(file: string, initialSuite: Suite, compileOptions: { allowRemoteData: boolean; allowCustomCode: boolean; maxRows: number | undefined }, runOnce: (suite: Suite) => Promise<{ status: string; tests: Array<{ status: string }> }>): Promise<void> {
+  const { watch } = await import("node:fs");
+  const { dirname } = await import("node:path");
+  const clear = () => process.stdout.write("\x1Bc");
+  let running = false;
+  let queued = false;
+  const cycle = async () => {
+    if (running) { queued = true; return; }
+    running = true;
+    try {
+      clear();
+      console.log(`MCP Rigor watch — ${new Date().toLocaleTimeString()}\nRunning ${file}\n`);
+      let suite: Suite;
+      try { suite = await loadTestFile(file, compileOptions); }
+      catch (error) { console.log(formatFailure(error)); console.log("\nWaiting for changes…"); return; }
+      const result = await runOnce(suite);
+      console.log(terminalReport(result as never));
+      const failed = result.tests.filter((test) => test.status === "failed").length;
+      console.log(failed ? `\n${failed} failing — waiting for changes…` : "\nAll green — waiting for changes…");
+    } finally {
+      running = false;
+      if (queued) { queued = false; void cycle(); }
+    }
+  };
+  const watchDirs = new Set<string>([dirname(file)]);
+  const target = initialSuite.target;
+  if (target.transport === "stdio" && target.cwd) watchDirs.add(resolve(target.cwd));
+  watchDirs.add(process.cwd());
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const trigger = (_event: string, name: string | Buffer | null) => {
+    const changed = String(name ?? "");
+    if (/^\.|node_modules|\.git|\.mcprigor|report\.html|\.log$/.test(changed)) return;
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => void cycle(), 250);
+  };
+  for (const dir of watchDirs) { try { watch(dir, { recursive: true }, trigger); } catch { /* fall back to non-recursive below */ try { watch(dir, trigger); } catch { /* ignore unwatchable dirs */ } } }
+  console.log(`Watching ${[...watchDirs].join(", ")} for changes. Press Ctrl+C to stop.`);
+  await cycle();
+  return new Promise<void>(() => {});
 }
 
 function flag(args: string[], name: string): string | undefined {
@@ -144,6 +216,11 @@ Start here:
   mcprigor check my-tests.mcpr      Check the wording before running
   mcprigor test my-tests.mcpr       Run the tests
   mcprigor test my-tests.mcpr --html report.html
+  mcprigor test my-tests.mcpr --command "node dist/server.js"
+                                      Override the suite's declared target
+  mcprigor test my-tests.mcpr --url https://qa.example.com/mcp
+  mcprigor test my-tests.mcpr --watch
+                                      Rerun on test or server file changes
   mcprigor author server.mcpr --out new-test.mcpr
                                       Guided no-code test creation
 

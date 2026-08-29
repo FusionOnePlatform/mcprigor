@@ -55,3 +55,18 @@ function friendly(value: string): string {
 function xml(value: string): string {
   return value.replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
+
+/** GitHub Actions workflow commands: one error annotation per failed test, one notice for the summary. */
+export function githubAnnotations(result: RunResult, file?: string): string {
+  const esc = (value: string) => value.replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
+  const lines: string[] = [];
+  for (const test of result.tests) {
+    if (test.status !== "failed") continue;
+    const location = file ? `file=${esc(file)},` : "";
+    lines.push(`::error ${location}title=${esc(`MCP Rigor: ${test.name}`)}::${esc(test.error ?? "Test failed")}`);
+  }
+  const passed = result.tests.filter((t) => t.status === "passed").length;
+  const failed = result.tests.filter((t) => t.status === "failed").length;
+  lines.push(`::notice title=MCP Rigor::${passed} passed, ${failed} failed (${result.tests.length} total)`);
+  return lines.join("\n");
+}

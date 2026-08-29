@@ -3,6 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { realpath, stat } from "node:fs/promises";
 import { join, relative, resolve } from "node:path";
+import { checkContract, contractReport } from "./contract.js";
 import { loadTestFile } from "./qa-loader.js";
 import { runParity, parityReport } from "./parity.js";
 import { runSuite } from "./runner.js";
@@ -87,6 +88,7 @@ const TOOLS: ToolDefinition[] = [
           maxItems: MAX_BATCH,
           description: "Relative paths of test files to run",
         },
+        filter: { type: "string", description: "Only run tests whose name matches this substring/pattern (same as CLI --test)" },
       },
       required: ["paths"],
       additionalProperties: false,
@@ -100,6 +102,20 @@ const TOOLS: ToolDefinition[] = [
       type: "object",
       properties: { path: { type: "string", description: "Relative path of the suite with parity targets" } },
       required: ["path"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "get_contract_drift",
+    description:
+      "Compare a saved contract lock file against the live server a suite declares. Read-only: reports added, removed, and changed tools/resources/prompts classified as breaking or non-breaking. Never updates the lock file — updating baselines is an explicit human CLI action (mcprigor contract-update).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        lock: { type: "string", description: "Relative path of the contract lock file (e.g. mcp.lock.yaml)" },
+        suite: { type: "string", description: "Relative path of a suite whose declared server to compare against" },
+      },
+      required: ["lock", "suite"],
       additionalProperties: false,
     },
   },
@@ -195,7 +211,8 @@ export async function startMcpServer(options: McpServeOptions = {}): Promise<voi
             const startedAt = Date.now();
             try {
               const suite = await loadTestFile(path);
-              const result: RunResult = await runSuite(suite, { cwd: root });
+              const filter = typeof args?.filter === "string" && args.filter.length ? args.filter : undefined;
+              const result: RunResult = await runSuite(suite, { cwd: root, ...(filter ? { filter } : {}) });
               const tests = result.tests.map((entry) => ({ name: entry.name, status: entry.status, durationMs: entry.durationMs, ...(entry.error ? { error: entry.error } : {}) }));
               await appendHistory(historyFile, { at: new Date().toISOString(), mode: "test", suite: relative(root, path), status: result.status, durationMs: Date.now() - startedAt, tests });
               items.push({ suite: relative(root, path), status: result.status, durationMs: Date.now() - startedAt, tests });
@@ -216,6 +233,17 @@ export async function startMcpServer(options: McpServeOptions = {}): Promise<voi
           const result = await runParity(suite, suite.targets, { cwd: root });
           const response = text({ suite: relative(root, path), status: result.status, report: parityReport(result) });
           if (result.status === "failed") response.isError = true;
+          return response;
+        }
+
+        case "get_contract_drift": {
+          const lockPath = safePath(root, argument(args, "lock"));
+          const suitePath = safePath(root, argument(args, "suite"));
+          const suite = await loadTestFile(suitePath);
+          const driftTarget = suite.target.transport === "stdio" && !suite.target.cwd ? { ...suite.target, cwd: root } : suite.target;
+          const checked = await checkContract(lockPath, driftTarget);
+          const response = text({ lock: relative(root, lockPath), breaking: Boolean(checked.diff.breaking), report: contractReport(checked.diff) });
+          if (checked.diff.breaking) response.isError = true;
           return response;
         }
 
