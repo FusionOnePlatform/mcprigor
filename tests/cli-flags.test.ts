@@ -120,3 +120,15 @@ describe("mcprigor record", () => {
     expect(rerun.code).toBe(0);
   }, 60000);
 });
+
+describe("mcprigor.config.yaml environments", () => {
+  it("--env selects a config target and overrides the suite", async () => {
+    const root = await fixture();
+    await writeFile(join(root, "mcprigor.config.yaml"), `environments:\n  good: node good-server.mjs\n`);
+    const result = await run(root, ["test", "suite.mcpr", "--env", "good"]);
+    expect(result.out).toContain("Environment: good");
+    expect(result.code).toBe(0);
+    const missing = await run(root, ["test", "suite.mcpr", "--env", "ghost"]);
+    expect(missing.out).toContain("MCP-PROJ-006");
+  }, 60000);
+});

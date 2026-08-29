@@ -85,11 +85,12 @@ async function main(): Promise<void> {
     return;
   }
   if (command === "drift") {
-    assertKnownFlags(flags, ["--against", "--fail-on", "--markdown", "--json", "--out", "--github-annotations", "--allow-remote-data", "--allow-custom-code", "--max-rows"]);
+    assertKnownFlags(flags, ["--against", "--fail-on", "--markdown", "--json", "--out", "--github-annotations", "--allow-remote-data", "--allow-custom-code", "--max-rows", "--env"]);
     const lockFile = requiredFlag(flags, "--against");
     const failOn = flag(flags, "--fail-on") ?? "breaking";
     if (!["breaking", "potentially-breaking", "any", "none"].includes(failOn)) throw new UsageError(`--fail-on must be one of: breaking, potentially-breaking, any, none (got ${failOn})`);
     const suite = await loadTestFile(resolve(file), compileOptions);
+    await applyEnvironment(suite, flag(flags, "--env"));
     const checked = await checkContract(resolve(lockFile), suite.target);
     const diff = checked.diff;
     console.log(flags.includes("--markdown") ? contractMarkdown(diff) : contractReport(diff));
@@ -141,8 +142,9 @@ async function main(): Promise<void> {
   }
   if (command !== "run" && command !== "test") throw new UsageError(`Unknown command: ${command}. Try: mcprigor --help`);
 
-  assertKnownFlags(flags, ["--test", "--html", "--json", "--junit", "--evidence", "--snapshot", "--update-snapshots", "--state-in", "--state-out", "--allow-state-target-mismatch", "--allow-remote-data", "--allow-custom-code", "--max-rows", "--command", "--url", "--watch", "--github-annotations", "--no-github-annotations", "--retries", "--quarantine"]);
+  assertKnownFlags(flags, ["--test", "--html", "--json", "--junit", "--evidence", "--snapshot", "--update-snapshots", "--state-in", "--state-out", "--allow-state-target-mismatch", "--allow-remote-data", "--allow-custom-code", "--max-rows", "--command", "--url", "--watch", "--github-annotations", "--no-github-annotations", "--retries", "--quarantine", "--env"]);
   const suite = await loadTestFile(resolve(file), compileOptions);
+  await applyEnvironment(suite, flag(flags, "--env"));
   applyTargetOverride(suite, flag(flags, "--command"), flag(flags, "--url"));
   const filter = flag(flags, "--test");
   const stateIn = flag(flags, "--state-in");
@@ -181,7 +183,7 @@ async function main(): Promise<void> {
   process.exitCode = result.status === "passed" ? 0 : 1;
 }
 
-const VALUE_FLAGS = new Set(["--test", "--html", "--json", "--junit", "--evidence", "--snapshot", "--state-in", "--state-out", "--max-rows", "--command", "--url", "--out", "--target", "--timeout", "--allow-tool", "--port", "--retries", "--window"]);
+const VALUE_FLAGS = new Set(["--test", "--html", "--json", "--junit", "--evidence", "--snapshot", "--state-in", "--state-out", "--max-rows", "--command", "--url", "--out", "--target", "--timeout", "--allow-tool", "--port", "--retries", "--window", "--env", "--against", "--fail-on"]);
 function assertKnownFlags(args: string[], known: string[]): void {
   const knownSet = new Set(known);
   for (let index = 0; index < args.length; index++) {
@@ -190,6 +192,15 @@ function assertKnownFlags(args: string[], known: string[]): void {
     if (!knownSet.has(value)) throw new UsageError(`Unknown option for this command: ${value}. Run mcprigor --help to see supported options.`);
     if (VALUE_FLAGS.has(value)) index++;
   }
+}
+async function applyEnvironment(suite: { target: Suite["target"] }, requested?: string): Promise<void> {
+  const { findProjectConfig, environmentTarget } = await import("./project-config.js");
+  const config = await findProjectConfig(process.cwd());
+  if (!config && !requested) return;
+  const picked = environmentTarget(config, requested);
+  if (!picked) return;
+  suite.target = picked.target;
+  console.log(`Environment: ${picked.name} (${picked.target.transport === "stdio" ? [picked.target.command, ...(picked.target.args ?? [])].join(" ") : picked.target.url}) from mcprigor.config.yaml\n`);
 }
 function applyTargetOverride(suite: { target: Suite["target"] }, command?: string, url?: string): void {
   if (command && url) throw new UsageError("Use either --command or --url, not both");
@@ -279,6 +290,9 @@ Start here:
   mcprigor test my-tests.mcpr --url https://qa.example.com/mcp
   mcprigor test my-tests.mcpr --watch
                                       Rerun on test or server file changes
+  mcprigor test my-tests.mcpr --env qa
+                                      Use a named environment from
+                                      mcprigor.config.yaml (dev/qa/prod)
   mcprigor test my-tests.mcpr --retries 2 [--quarantine]
                                       Retry failures; skip quarantined tests
   mcprigor flaky [DIRECTORY] [--window 200] [--json out.json]
