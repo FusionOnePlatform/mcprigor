@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -31,9 +31,26 @@ describe("formal language frontend", () => {
   it("imports flow-only libraries and applies default inputs", async () => {
     const directory = await mkdtemp(join(tmpdir(), "mcp-import-")); dirs.push(directory);
     const file = join(directory, "main.mcpr");
-    await writeFile(file, `MCP Test 1\nSuite: "imports"\nServer: node --import tsx ${resolve("tests/fixtures/server.ts")}\nImport flows from "${resolve("tests/fixtures/shared-flows.mcpr")}"\nTest: "uses imported flow"\n  Use flow "Add with default" with:\n    a: 4\n    expected: 5\n`);
+    await copyFile(resolve("tests/fixtures/shared-flows.mcpr"), join(directory, "shared-flows.mcpr"));
+    await writeFile(file, `MCP Test 1\nSuite: "imports"\nServer: node --import tsx ${resolve("tests/fixtures/server.ts")}\nImport flows from "./shared-flows.mcpr"\nTest: "uses imported flow"\n  Use flow "Add with default" with:\n    a: 4\n    expected: 5\n`);
     const suite = await loadTestFile(file);
     const result = await runSuite(suite);
     expect(result.status).toBe("passed");
   }, 15_000);
+
+  it("rejects absolute import paths", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "mcp-import-abs-")); dirs.push(directory);
+    const file = join(directory, "main.mcpr");
+    await writeFile(file, `MCP Test 1\nSuite: "imports"\nServer: node x.js\nImport flows from "${resolve("tests/fixtures/shared-flows.mcpr")}"\nTest: "t"\n  Send "ping"\n`);
+    await expect(loadTestFile(file)).rejects.toThrow(/MCPLANG304/);
+  });
+
+  it("rejects imports that traverse outside the suite directory", async () => {
+    const outer = await mkdtemp(join(tmpdir(), "mcp-import-outer-")); dirs.push(outer);
+    await writeFile(join(outer, "secret-flows.mcpr"), `Flow: "Escaped"\n  Send "ping"\n`);
+    const directory = join(outer, "suite"); await mkdir(directory);
+    const file = join(directory, "main.mcpr");
+    await writeFile(file, `MCP Test 1\nSuite: "imports"\nServer: node x.js\nImport flows from "../secret-flows.mcpr"\nTest: "t"\n  Send "ping"\n`);
+    await expect(loadTestFile(file)).rejects.toThrow(/MCPLANG307/);
+  });
 });
