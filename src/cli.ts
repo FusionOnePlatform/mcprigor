@@ -49,6 +49,37 @@ async function main(): Promise<void> {
     if (result.score < threshold) { console.error(`\nCoverage gate failed: ${result.score}% is below --fail-under ${threshold}.`); process.exitCode = 1; }
     return;
   }
+  if (command === "publish") {
+    if (!file || file.startsWith("--")) throw new UsageError("publish requires a suite file");
+    assertKnownFlags(flags, ["--site", "--out", "--test", "--env", "--command", "--url", "--allow-remote-data", "--allow-custom-code", "--max-rows", "--include-json"]);
+    const suite = await loadTestFile(resolve(file), compileOptions);
+    await applyEnvironment(suite, flag(flags, "--env"));
+    applyTargetOverride(suite, flag(flags, "--command"), flag(flags, "--url"));
+    const site = flag(flags, "--site"); const outDir = flag(flags, "--out");
+    if (!site && !outDir) throw new UsageError("publish requires --site NETLIFY_SITE (with NETLIFY_AUTH_TOKEN set) or --out DIRECTORY for a local bundle");
+    const trace = new TraceRecorder(createRedactor([...(suite.redact ?? []), ...collectTargetSecrets(suite.target)]));
+    const filter = flag(flags, "--test");
+    const result = await runSuite(suite, { ...(filter ? { filter } : {}), allowCustomCode: compileOptions.allowCustomCode, cwd: process.cwd(), trace });
+    console.log(terminalReport(result));
+    const { buildTimeline } = await import("./timeline.js");
+    const { tmpdir } = await import("node:os"); const { mkdtemp, readFile: readTmp, rm } = await import("node:fs/promises"); const { join: joinPath } = await import("node:path");
+    const scratch = await mkdtemp(joinPath(tmpdir(), "mcprigor-publish-"));
+    const htmlPath = joinPath(scratch, "index.html");
+    await writeHtmlReport(result, htmlPath, buildTimeline(trace.events));
+    const files: Record<string, string> = { "/index.html": await readTmp(htmlPath, "utf8") };
+    if (flags.includes("--include-json")) files["/result.json"] = JSON.stringify(result, null, 2) + "\n";
+    await rm(scratch, { recursive: true, force: true });
+    const { publishToNetlify, writeLocalBundle } = await import("./publish.js");
+    if (site) {
+      const token = process.env.NETLIFY_AUTH_TOKEN || process.env.MCPRIGOR_PUBLISH_TOKEN;
+      if (!token) throw new UsageError("publish needs NETLIFY_AUTH_TOKEN (or MCPRIGOR_PUBLISH_TOKEN) in the environment; tokens are never accepted as flags");
+      const deployed = await publishToNetlify(files, { site, token });
+      console.log(`\nPublished report: ${deployed.url}\nDeploy: ${deployed.deployId} (${deployed.files.length} file${deployed.files.length === 1 ? "" : "s"})`);
+    }
+    if (outDir) { const written = await writeLocalBundle(files, resolve(outDir)); console.log(`\nReport bundle written to ${resolve(outDir)} (${written.length} file${written.length === 1 ? "" : "s"}). Host the directory on any static site.`); }
+    process.exitCode = result.status === "passed" ? 0 : 1;
+    return;
+  }
   if (command === "monitor") {
     if (!file || file.startsWith("--")) throw new UsageError("monitor requires an HTTP suite file");
     assertKnownFlags(flags, ["--every", "--notify", "--notify-on", "--max-runs"]);
@@ -296,7 +327,7 @@ async function main(): Promise<void> {
   process.exitCode = result.status === "passed" ? 0 : 1;
 }
 
-const VALUE_FLAGS = new Set(["--test", "--html", "--json", "--junit", "--evidence", "--snapshot", "--state-in", "--state-out", "--max-rows", "--command", "--url", "--out", "--target", "--timeout", "--allow-tool", "--port", "--retries", "--window", "--env", "--every", "--notify", "--notify-on", "--max-runs", "--against", "--fail-on", "--fail-under", "--csv", "--pdf", "--format"]);
+const VALUE_FLAGS = new Set(["--test", "--html", "--json", "--junit", "--evidence", "--snapshot", "--state-in", "--state-out", "--max-rows", "--command", "--url", "--out", "--target", "--timeout", "--allow-tool", "--port", "--retries", "--window", "--env", "--every", "--notify", "--notify-on", "--max-runs", "--site", "--against", "--fail-on", "--fail-under", "--csv", "--pdf", "--format"]);
 function assertKnownFlags(args: string[], known: string[]): void {
   const knownSet = new Set(known);
   for (let index = 0; index < args.length; index++) {
@@ -434,6 +465,10 @@ Start here:
   mcprigor monitor prod.mcpr --every 15m --notify https://hooks.example/rigor
                                       Continuously monitor an HTTP MCP endpoint,
                                       append history, and notify on transitions
+  mcprigor publish suite.mcpr --site YOUR_NETLIFY_SITE
+                                      Run the suite and host the HTML report at
+                                      a shareable URL (NETLIFY_AUTH_TOKEN env);
+                                      or --out DIR for a local static bundle
 
 Multi-server compositions:
   mcprigor composition-check fleet.mcpr

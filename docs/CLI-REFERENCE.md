@@ -249,6 +249,15 @@ Runs an HTTP suite immediately and on a fixed interval, appends every result to 
 
 Use `FusionOnePlatform/mcprigor@v1` to run suites, contract drift, flaky warnings, job summaries, and an update-in-place pull-request comment. See [GitHub Action](GITHUB-ACTION.md).
 
+## Shareable hosted reports
+
+```bash
+mcprigor publish suite.mcpr --site your-netlify-site
+mcprigor publish suite.mcpr --out reports/latest
+```
+
+Runs the suite and hosts the HTML report (with the session timeline) at a shareable static URL, or writes a local bundle for any static host. The hosting token comes only from `NETLIFY_AUTH_TOKEN`. See [Shareable hosted reports](PUBLISHING.md).
+
 ## Latency budgets and regression gate
 
 ```bash
