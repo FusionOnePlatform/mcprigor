@@ -50,7 +50,8 @@ Common options:
 --github-annotations       Emit ::error/::notice workflow commands
                            (automatic when GITHUB_ACTIONS=true;
                            disable with --no-github-annotations)
---html report.html         Write a readable HTML report
+--html report.html         Write a readable HTML report with a clickable
+                           request/response session timeline
 --json result.json         Write structured JSON
 --junit result.xml         Write JUnit XML
 --evidence DIRECTORY       Save a sanitized evidence bundle

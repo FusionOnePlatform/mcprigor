@@ -31,6 +31,17 @@ mcprigor evidence-compare .mcprigor/run-001 .mcprigor/run-002
 
 Comparison checks the result and normalized trace fingerprints. Matching fingerprints indicate semantically identical evidence under the current normalization policy.
 
+## Interactive session timeline
+
+`mcprigor test suite.mcpr --html report.html` embeds a HAR-style session timeline directly in the readable report. Every recorded event appears in order:
+
+- connect, close, and diagnostic markers;
+- one row per JSON-RPC call, pairing the request with its response;
+- per-call duration in milliseconds;
+- failed calls flagged in red with the server's error payload.
+
+Click any row to expand its captured request parameters and response body. The timeline is self-contained (no network, no external assets) and uses the same redaction as evidence bundles, so secrets never reach the report. `--html` records a trace even without `--evidence`; combine both to keep the raw and normalized JSONL alongside the visual timeline.
+
 ## Events
 
 - `session.connect.start`

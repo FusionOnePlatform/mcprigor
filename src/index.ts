@@ -23,6 +23,7 @@ export { readState, targetFingerprint, writeState, type PersistedState } from ".
 export { compareEvidence, showEvidence, TraceRecorder, traceSession, writeEvidenceBundle, type EvidenceManifest, type NormalizedTraceEvent, type TraceEvent } from "./trace.js";
 export { runSuite, type RunOptions } from "./runner.js";
 export { monitorLine, monitorSuite, parseDuration, type MonitorEvent, type MonitorOptions } from "./monitor.js";
+export { buildTimeline, type TimelineEntry } from "./timeline.js";
 export { createSession, installSignalCleanup, shutdownSessions } from "./session.js";
 export { RigorError, FAILURE_CODES, classifyFailure, formatFailure, sanitizeTerminal, type FailureCategory, type FailureInfo } from "./errors.js";
 export { defineExtension, defineManifest, type ExtensionDataProvider, type ExtensionFunction, type ExtensionManifest, type ExtensionPermission } from "./extension-sdk.js";
