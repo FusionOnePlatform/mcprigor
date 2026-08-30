@@ -8,6 +8,7 @@ export const suiteSchema = {
     name: { type: "string", minLength: 1 },
     target: { $ref: "#/$defs/target" },
     targets: { type: "object", minProperties: 2, additionalProperties: { $ref: "#/$defs/target" } },
+    servers: { type: "object", minProperties: 2, propertyNames: { minLength: 1 }, additionalProperties: { $ref: "#/$defs/target" } },
     budgets: {
       type: "array",
       items: {
@@ -31,7 +32,7 @@ export const suiteSchema = {
       items: {
         type: "object", additionalProperties: false, required: ["name", "steps"],
         properties: {
-          name: { type: "string", minLength: 1 }, skip: { oneOf: [{ type: "boolean" }, { type: "string" }] },
+          name: { type: "string", minLength: 1 }, server: { type: "string", minLength: 1 }, skip: { oneOf: [{ type: "boolean" }, { type: "string" }] },
           id: { type: "string", minLength: 1 }, logicalName: { type: "string" },
           dependsOn: { type: "array", uniqueItems: true, items: { type: "string", minLength: 1 } },
           variables: { type: "object" },

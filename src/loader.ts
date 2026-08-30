@@ -37,10 +37,12 @@ export function validateSuite(value: unknown): asserts value is Suite {
     const detail = (validate.errors ?? []).map(formatError).join("; ");
     throw new Error(`MCP-CONFIG-003 Invalid suite: ${detail}`);
   }
+  const suite = value as Suite;
   const names = new Set<string>();
-  for (const test of (value as Suite).tests) {
+  for (const test of suite.tests) {
     if (names.has(test.name)) throw new Error(`MCP-CONFIG-004 Duplicate test name: ${test.name}`);
     names.add(test.name);
+    if (test.server && !suite.servers?.[test.server]) throw new Error(`MCP-CONFIG-007 Test “${test.name}” selects unknown server “${test.server}”`);
   }
 }
 

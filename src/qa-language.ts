@@ -9,6 +9,7 @@ export function compileQaLanguage(source: string, file = "test.mcpr"): Suite {
   let name = "MCP acceptance tests";
   let target: Suite["target"] | undefined;
   const targets: Record<string, Suite["target"]> = {};
+  const servers: Record<string, Suite["target"]> = {};
   let defaults: Suite["defaults"] | undefined;
   const budgets: NonNullable<Suite["budgets"]> = [];
   let redact: string[] | undefined;
@@ -28,6 +29,17 @@ export function compileQaLanguage(source: string, file = "test.mcpr"): Suite {
     let match: RegExpMatchArray | null;
     if (/^MCP Test 1$/i.test(line)) continue;
     if ((match = line.match(/^Suite:\s*(.+)$/i))) { name = unquote(match[1]!); continue; }
+    if ((match = line.match(/^Named server\s+["']([^"']+)["']:\s*(.+)$/i))) {
+      const label = match[1]!.trim(); const connection = match[2]!.trim();
+      if (/^https?:\/\//i.test(connection)) servers[label] = { transport: "streamable-http", url: unquote(connection) };
+      else { const words = splitCommand(connection, file, lineNumber); if (!words.length) fail(file, lineNumber, `Write a command or URL after named server “${label}”.`); servers[label] = { transport: "stdio", command: words[0]!, args: words.slice(1) }; }
+      target ??= servers[label]; continue;
+    }
+    if ((match = line.match(/^Server options for\s+["']([^"']+)["']:\s*$/i))) {
+      const selected = servers[match[1]!]; if (!selected) fail(file, lineNumber, `Unknown named server “${match[1]}”. Declare it first.`);
+      const block = readIndentedMap(lines, index, file); index = block.lastLine;
+      Object.assign(selected, selected.transport === "stdio" ? { cwd: block.value.cwd, env: block.value.env } : { headers: block.value.headers, ...tokenFromOption(block.value as Record<string, unknown>) }); continue;
+    }
     if ((match = line.match(/^(?:Compare|Parity) target\s+["']([^"']+)["']:\s*(.+)$/i))) {
       const label = match[1]!.trim(); const connection = match[2]!.trim();
       if (/^https?:\/\//i.test(connection)) targets[label] = { transport: "streamable-http", url: unquote(connection) };
@@ -69,6 +81,7 @@ export function compileQaLanguage(source: string, file = "test.mcpr"): Suite {
     }
     if (!test) fail(file, lineNumber, "Start a scenario with 'Test: what you want to verify'.");
 
+    if ((match = line.match(/^On server\s+["']([^"']+)["']$/i))) { test.server = match[1]!.trim(); continue; }
     if ((match = line.match(/^(?:Id|Test ID):\s*["']?([^"']+?)["']?$/i))) { test.id = match[1]!.trim(); continue; }
     if ((match = line.match(/^Skip(?::\s*(.*))?$/i))) { test.skip = match[1]?.trim() ? unquote(match[1]) : true; continue; }
     if (/^Variables:\s*$/i.test(line)) { const block = readIndentedMap(lines, index, file); index = block.lastLine; test.variables = block.value; continue; }
@@ -185,7 +198,9 @@ export function compileQaLanguage(source: string, file = "test.mcpr"): Suite {
   if (!tests.length) throw new Error(`QA-LANG-001 ${file}: Add at least one 'Test: …'.`);
   for (const item of tests) if (!item.steps.length) throw new Error(`QA-LANG-001 ${file}: Test “${item.name}” has no actions.`);
   if (Object.keys(targets).length === 1) throw new Error(`QA-LANG-001 ${file}: Parity needs at least two 'Compare target' lines.`);
-  return { version: 1, name, target, ...(Object.keys(targets).length ? { targets } : {}), ...(defaults ? { defaults } : {}), ...(budgets.length ? { budgets } : {}), ...(redact ? { redact } : {}), ...(snapshots ? { snapshots } : {}), ...(client ? { client } : {}), tests };
+  if (Object.keys(servers).length === 1) throw new Error(`QA-LANG-001 ${file}: A composition needs at least two 'Named server' lines.`);
+  for (const item of tests) if (item.server && !servers[item.server]) throw new Error(`QA-LANG-001 ${file}: Test “${item.name}” selects unknown server “${item.server}”. Known servers: ${Object.keys(servers).join(", ")}.`);
+  return { version: 1, name, target, ...(Object.keys(targets).length ? { targets } : {}), ...(Object.keys(servers).length ? { servers } : {}), ...(defaults ? { defaults } : {}), ...(budgets.length ? { budgets } : {}), ...(redact ? { redact } : {}), ...(snapshots ? { snapshots } : {}), ...(client ? { client } : {}), tests };
 }
 
 function humanAssertion(path: string, verb: string, rest: string, file: string, line: number): JsonAssertion {

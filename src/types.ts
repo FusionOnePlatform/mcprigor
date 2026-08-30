@@ -89,6 +89,8 @@ export type TestStep = RequestStep | ToolStep | UtilityStep | NativeStep;
 
 export interface TestCase {
   name: string;
+  /** Named server from suite.servers used by this test; defaults to suite.target. */
+  server?: string;
   id?: string;
   logicalName?: string;
   skip?: boolean | string;
@@ -104,6 +106,8 @@ export interface Suite {
   name?: string;
   target: Target;
   targets?: Record<string, Target>;
+  /** Named servers mounted together as one composition. Tests select one with server. */
+  servers?: Record<string, Target>;
   budgets?: PerfBudget[];
   defaults?: { timeoutMs?: number };
   redact?: string[];
@@ -125,6 +129,7 @@ export interface StepResult {
 
 export interface TestResult {
   name: string;
+  server?: string;
   id?: string;
   status: "passed" | "failed" | "skipped" | "blocked";
   durationMs: number;

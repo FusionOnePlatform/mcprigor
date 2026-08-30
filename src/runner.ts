@@ -8,6 +8,18 @@ import { createSession } from "./session.js";
 import { traceSession, type TraceRecorder } from "./trace.js";
 import type { RunResult, SessionInfo, StepResult, Suite, TestCase, TestResult, TestSession, TestStep } from "./types.js";
 
+async function resolveRunTarget(target: Suite["target"], options: RunOptions): Promise<Suite["target"]> {
+  const resolved = replaceVariables(target, { state: options.state ?? {} }) as Suite["target"];
+  if (options.cwd && resolved.transport === "stdio" && !resolved.cwd) resolved.cwd = options.cwd;
+  if (resolved.transport === "streamable-http" && resolved.tokenFrom) {
+    const { fetchToken } = await import("./session.js");
+    const token = await fetchToken(resolved.tokenFrom);
+    resolved.headers = { ...resolved.headers, Authorization: `Bearer ${token}` };
+    delete resolved.tokenFrom;
+  }
+  return resolved;
+}
+
 export interface RunOptions {
   filter?: string; sessionFactory?: typeof createSession; allowCustomCode?: boolean;
   retries?: number; quarantine?: Array<{ suite: string; test: string }>; suitePath?: string;
@@ -21,15 +33,11 @@ export async function runSuite(suite: Suite, options: RunOptions = {}): Promise<
   const started = Date.now();
   const tests: TestResult[] = [];
   const protocolVersions = new Set<string>();
-  const resolvedTarget = replaceVariables(suite.target, { state: options.state ?? {} }) as Suite["target"];
-  if (options.cwd && resolvedTarget.transport === "stdio" && !resolvedTarget.cwd) resolvedTarget.cwd = options.cwd;
-  if (resolvedTarget.transport === "streamable-http" && resolvedTarget.tokenFrom) {
-    const { fetchToken } = await import("./session.js");
-    const token = await fetchToken(resolvedTarget.tokenFrom);
-    resolvedTarget.headers = { ...resolvedTarget.headers, Authorization: `Bearer ${token}` };
-    delete resolvedTarget.tokenFrom;
-  }
-  const redactor = createRedactor([...(suite.redact ?? []), ...collectTargetSecrets(resolvedTarget)]);
+  const targets = new Map<string, Suite["target"]>();
+  targets.set("", await resolveRunTarget(suite.target, options));
+  for (const [name, target] of Object.entries(suite.servers ?? {})) targets.set(name, await resolveRunTarget(target, options));
+  for (const test of suite.tests) if (test.server && !targets.has(test.server)) throw new Error(`MCP-COMP-005 Test “${test.name}” selects unknown server “${test.server}”`);
+  const redactor = createRedactor([...(suite.redact ?? []), ...[...targets.values()].flatMap(collectTargetSecrets)]);
   const snapshots = new SnapshotStore({ file: options.snapshotFile ?? suite.snapshots?.file ?? "mcprigor.snap.json", update: options.updateSnapshots, ignore: suite.snapshots?.ignore });
   await snapshots.load();
   const functions = await createFunctionRegistry({ modules: suite.extensions?.functions, allowCustomCode: options.allowCustomCode, timeoutMs: options.functionTimeoutMs, cwd: options.cwd, permissions: suite.extensions?.permissions, allowlist: suite.extensions?.allowlist, unsafeLegacy: suite.extensions?.unsafeLegacy });
@@ -47,15 +55,15 @@ export async function runSuite(suite: Suite, options: RunOptions = {}): Promise<
       return !candidates.length || candidates.some((result) => result.status !== "passed");
     });
     if (blocking.length) {
-      const result: TestResult = { id, name: test.name, status: "blocked", durationMs: 0, steps: [], error: `MCP-DEP-003 Blocked because these dependencies did not pass: ${blocking.join(", ")}` };
+      const result: TestResult = { id, name: test.name, ...(test.server ? { server: test.server } : {}), status: "blocked", durationMs: 0, steps: [], error: `MCP-DEP-003 Blocked because these dependencies did not pass: ${blocking.join(", ")}` };
       tests.push(result); resultsById.set(id, result); continue;
     }
     if (test.skip) {
-      const result: TestResult = { id, name: test.name, status: "skipped", durationMs: 0, steps: [], ...(typeof test.skip === "string" ? { error: test.skip } : {}) };
+      const result: TestResult = { id, name: test.name, ...(test.server ? { server: test.server } : {}), status: "skipped", durationMs: 0, steps: [], ...(typeof test.skip === "string" ? { error: test.skip } : {}) };
       tests.push(result); resultsById.set(id, result); continue;
     }
     if (options.quarantine?.some((entry) => entry.test === test.name && (!options.suitePath || entry.suite === options.suitePath))) {
-      const result: TestResult = { id, name: test.name, status: "skipped", durationMs: 0, steps: [], error: "MCP-FLAKY-001 Quarantined as flaky; remove from .mcprigor/quarantine.txt to re-enable" };
+      const result: TestResult = { id, name: test.name, ...(test.server ? { server: test.server } : {}), status: "skipped", durationMs: 0, steps: [], error: "MCP-FLAKY-001 Quarantined as flaky; remove from .mcprigor/quarantine.txt to re-enable" };
       tests.push(result); resultsById.set(id, result); continue;
     }
     const dependencyVariables = Object.fromEntries((test.dependsOn ?? []).flatMap((dependency) => dependencyOutputEntries(dependency, resultsById)));
@@ -63,7 +71,8 @@ export async function runSuite(suite: Suite, options: RunOptions = {}): Promise<
     const attempts = Math.max(1, Math.min(5, (options.retries ?? 0) + 1));
     let outcome: Awaited<ReturnType<typeof runTest>> | undefined;
     for (let attempt = 1; attempt <= attempts; attempt++) {
-      const baseSession = (options.sessionFactory ?? createSession)(resolvedTarget);
+      const selectedTarget = targets.get(test.server ?? "")!;
+      const baseSession = (options.sessionFactory ?? createSession)(selectedTarget);
       const session = options.trace ? traceSession(baseSession, options.trace, () => traceContext) : baseSession;
       session.configureClient?.(suite.client ?? {});
       outcome = await runTest(suite, test, session, protocolVersions, redactor, functions, options.functionTimeoutMs, { state: expandDotted(options.state ?? {}), deps: dependencyVariables }, (step) => { traceContext = { testId: id, step }; }, snapshots);
@@ -137,7 +146,7 @@ async function runTest(
     }
   } catch (error) { failure = codeMessage(error, "MCP-CONNECT-001"); }
   finally { try { await session.close(); } catch (error) { failure ??= codeMessage(error, "MCP-CLEANUP-001"); } }
-  return { info, result: redactor.value({ id: testId(test), name: test.name, status: failure ? "failed" : "passed", durationMs: Date.now() - started, steps: results, ...(Object.keys(outputs).length ? { outputs } : {}), ...(failure ? { error: redactor.text(failure) } : {}) }) };
+  return { info, result: redactor.value({ id: testId(test), name: test.name, ...(test.server ? { server: test.server } : {}), status: failure ? "failed" : "passed", durationMs: Date.now() - started, steps: results, ...(Object.keys(outputs).length ? { outputs } : {}), ...(failure ? { error: redactor.text(failure) } : {}) }) };
 }
 
 function orderTests(tests: TestCase[]): TestCase[] {

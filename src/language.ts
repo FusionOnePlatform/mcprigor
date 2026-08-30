@@ -64,7 +64,7 @@ function classify(text: string): LanguageNodeKind {
   if (text.startsWith("#")) return "comment";
   if (/^MCP Test\s+/i.test(text)) return "version";
   if (/^Suite:/i.test(text)) return "suite";
-  if (/^(Server:|MCP URL:|Connect to:|Compare target\s+|Parity target\s+|Target options for\s+|Server options:)/i.test(text)) return "server";
+  if (/^(Server:|MCP URL:|Connect to:|Named server\s+|Server options for\s+|Compare target\s+|Parity target\s+|Target options for\s+|Server options:)/i.test(text)) return "server";
   if (/^Import flows from\s+/i.test(text)) return "import";
   if (/^Flow:/i.test(text)) return "flow";
   if (/^Data source:/i.test(text)) return "data";
