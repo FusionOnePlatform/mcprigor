@@ -29,6 +29,7 @@ const DESCRIPTIONS = {
   "github-action": "Run MCP Rigor tests and contract drift in GitHub Actions with rich job summaries, flaky warnings, and update-in-place pull-request comments.",
   "coverage": "Measure deterministic MCP contract coverage across tools, resources, prompts, templates, and input-schema branches with CI thresholds.",
   "monitoring": "Continuously monitor production Streamable HTTP MCP endpoints, record trend history, and notify webhooks on failures and recoveries.",
+  "publishing": "Publish an MCP Rigor test run as a shareable static report URL with an interactive request/response session timeline.",
   "multi-server-compositions": "Test multiple MCP servers as one mounted fleet, detect tool and schema collisions, and gate combined contract drift in CI.",
   "security-audit": "Run deterministic MCP security probes for malformed requests, spoofing, oversized payloads, traversal, prompt injection, and secret exposure with scored reports.",
   "contract-drift": "Lock an MCP server's contract with SHA-256 fingerprints and detect breaking, potentially breaking, and non-breaking drift in CI.",
@@ -56,6 +57,8 @@ const FAQ = [
   ["Does MCP Rigor have a GitHub Action?", "Yes. The composite Action runs suites and contract drift, adds flaky-history warnings, writes a rich job summary, and creates or updates one pull-request comment."],
   ["How does MCP Rigor measure test coverage?", "Coverage compares test references with the live discovered MCP contract: tools, resources, resource templates, prompts, input properties, enums, and union branches. CI can enforce a minimum score."],
   ["Can MCP Rigor continuously monitor a production MCP server?", "Yes. Monitoring repeatedly runs a Streamable HTTP suite, appends results to trend history, and sends JSON webhooks on failures, recoveries, changes, or every run."],
+  ["Can MCP Rigor show the raw requests and responses of a test run?", "Yes. HTML reports embed a clickable HAR-style session timeline: every JSON-RPC call with its duration, request parameters, and response body, redacted before rendering."],
+  ["Can MCP Rigor share test reports outside CI?", "Yes. mcprigor publish deploys the HTML report to your own static hosting and prints a shareable URL, or writes a local bundle for any static host."],
 ];
 
 const NAV = [
@@ -80,6 +83,7 @@ const NAV = [
     ["MULTI-SERVER-COMPOSITIONS", "Multi-server compositions"],
     ["COVERAGE", "Coverage"],
     ["GITHUB-ACTION", "GitHub Action"],
+    ["PUBLISHING", "Shareable hosted reports"],
   ]},
   { section: "Contracts & evidence", pages: [
     ["CONTRACT-DRIFT", "Contract drift"],
@@ -337,6 +341,8 @@ const LANDING = `
   <div class="card"><h3>GitHub Action <span class="tag">Next release</span></h3><p>Run suites and drift in CI, publish a rich job summary, and update one PR comment with pass tables, drift details, flaky warnings, and failures. <a href="./docs/github-action.html">Action guide →</a></p></div>
   <div class="card"><h3>Coverage gate <span class="tag">Next release</span></h3><p>Find untested tools, prompts, resources, templates, properties, and enum/union branches; enforce <code>--fail-under 80</code>. <a href="./docs/coverage.html">Coverage guide →</a></p></div>
   <div class="card"><h3>Production monitoring <span class="tag">Next release</span></h3><p>Schedule HTTP MCP tests, feed existing trends and performance baselines, and notify webhooks on failures and recoveries. <a href="./docs/monitoring.html">Monitoring guide →</a></p></div>
+  <div class="card"><h3>Session timeline <span class="tag">Next release</span></h3><p>Every HTML report embeds a clickable HAR-style timeline: one row per JSON-RPC call with durations, request params, and response bodies. <a href="./docs/evidence.html">Evidence guide →</a></p></div>
+  <div class="card"><h3>Shareable hosted reports <span class="tag">Next release</span></h3><p><code>mcprigor publish</code> turns a run into a static report URL on your own Netlify site — redacted first, gated by your hosting access. <a href="./docs/publishing.html">Publishing guide →</a></p></div>
   <div class="card"><h3>For product owners</h3><p>Readable tests double as living acceptance criteria, and evidence bundles prove what was tested, against which server, and when.</p></div>
   <div class="card"><h3>Transport parity</h3><p>Run the same scenario against a local stdio server and a deployed Streamable HTTP endpoint and see exactly where behavior differs.</p></div>
   <div class="card"><h3>Data-driven</h3><p>Tables, CSV, JSON, YAML, Excel, REST, and Google Sheets — with typed columns, filters, joins, and seeded sampling.</p></div>
@@ -444,10 +450,12 @@ ${NAV.flatMap(({ section, pages }) => pages.map(([doc, label]) => `- [${label}](
 - Natural-language tests compile deterministically; the same sentence always produces the same test.
 - Test files use the .mcpr extension (not .mcp, which conflicts with other software).
 - Transports: local stdio subprocess and deployed Streamable HTTP.
-- CLI: init, check, test, author, parity, workspace, serve, audit, coverage, monitor, trends, composition-check, composition-discover, composition-drift, discover, generate, contract-check, contract-diff, contract-update, evidence-show, evidence-compare, snapshot-diff, replay.
-- GitHub Action: runs suites and drift, adds flaky warnings, writes a job summary, and updates one pull-request comment.
+- CLI: init, check, test, author, parity, workspace, serve, audit, coverage, monitor, publish, trends, composition-check, composition-discover, composition-drift, discover, generate, contract-check, contract-diff, contract-update, evidence-show, evidence-compare, snapshot-diff, replay.
+- GitHub Action: runs suites and drift, adds flaky warnings, writes a job summary, updates one pull-request comment, and uploads report and drift-markdown artifacts.
 - Coverage: tools, resources, templates, prompts, input properties, enums, oneOf, and anyOf with --fail-under gating.
 - Monitoring: scheduled Streamable HTTP checks, transition webhooks, and shared trend history.
+- HTML reports: clickable HAR-style session timeline with per-call durations, request params, and response bodies.
+- Publishing: mcprigor publish deploys the redacted HTML report to static hosting and prints a shareable URL.
 - Performance governance: per-call latency assertions, percentile budgets over history, and --fail-on-regression CI gating.
 - Deterministic security audit: malformed requests, spoofing, oversized payloads, path traversal, prompt injection, and secret-canary exposure; tool execution requires exact --allow-tool opt-in.
 - Multi-server compositions: per-test named-server routing, cross-server tool/schema/resource/prompt collision detection, stable combined locks, and fleet drift.

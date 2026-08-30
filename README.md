@@ -250,6 +250,9 @@ Performance and governance features on `main` (next npm release after 1.4.0):
 - [GitHub Action with rich PR reports](docs/GITHUB-ACTION.md)
 - [Live MCP surface and schema coverage with `--fail-under`](docs/COVERAGE.md)
 - [Scheduled HTTP monitoring with failure/recovery webhooks](docs/MONITORING.md)
+- [Clickable HAR-style session timeline in HTML reports](docs/EVIDENCE.md)
+- [Contract drift markdown as a downloadable Action artifact](docs/GITHUB-ACTION.md)
+- [`mcprigor publish` — shareable static report URLs](docs/PUBLISHING.md)
 
 See the [complete CLI reference](docs/CLI-REFERENCE.md).
 
