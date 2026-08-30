@@ -1,4 +1,4 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, rename, writeFile } from "node:fs/promises";
 import YAML from "yaml";
 import { canonicalize, fingerprint } from "./canonical.js";
 import { compareContracts, type ContractChange, type ContractDiff } from "./contract.js";
@@ -80,8 +80,19 @@ function namedIndex(servers: Record<string, DiscoveryDocument>, surface: "tools"
   return index;
 }
 
-export async function writeCompositionLock(lock: CompositionLock, file: string): Promise<void> { await writeFile(file, YAML.stringify(lock, { sortMapEntries: true }), "utf8"); }
-export async function readCompositionLock(file: string): Promise<CompositionLock> { const source = await readFile(file, "utf8"); return (file.endsWith(".json") ? JSON.parse(source) : YAML.parse(source)) as CompositionLock; }
+export async function writeCompositionLock(lock: CompositionLock, file: string): Promise<void> {
+  const temporary = `${file}.${process.pid}.tmp`;
+  await writeFile(temporary, file.endsWith(".json") ? JSON.stringify(lock, null, 2) + "\n" : YAML.stringify(lock, { sortMapEntries: true }), "utf8");
+  await rename(temporary, file);
+}
+export async function readCompositionLock(file: string): Promise<CompositionLock> {
+  const source = await readFile(file, "utf8"); const value = file.endsWith(".json") ? JSON.parse(source) : YAML.parse(source);
+  if (!value || typeof value !== "object" || value.kind !== "mcprigor-composition" || value.schemaVersion !== 1 || !value.servers || typeof value.servers !== "object" || !Array.isArray(value.issues)) throw new Error(`MCP-COMP-LOCK-001 ${file} is not an MCP Rigor composition lock`);
+  return value as CompositionLock;
+}
+export async function updateCompositionLock(file: string, servers: Record<string, Target>): Promise<CompositionDrift> {
+  const before = await readCompositionLock(file); const after = await discoverComposition(servers); const diff = compareCompositions(before, after); await writeCompositionLock(after, file); return diff;
+}
 
 /** Compare the entire fleet: added/removed servers, each contract, and collision-set changes. */
 export function compareCompositions(before: CompositionLock, after: CompositionLock): CompositionDrift {
