@@ -1,6 +1,6 @@
 # QA guide
 
-Use this page as a short everyday checklist. For examples, open the [plain-language cookbook](PLAIN-LANGUAGE-COOKBOOK.md).
+Use this page as a short everyday checklist. For examples, open the [natural-language cookbook](NATURAL-LANGUAGE-COOKBOOK.md).
 
 ## Everyday workflow
 
@@ -121,7 +121,7 @@ Use values as `${row.input}` and `${row.expected}`.
 ## Where to go next
 
 - [Getting started](GETTING-STARTED.md)
-- [Plain-language cookbook](PLAIN-LANGUAGE-COOKBOOK.md)
+- [Natural-language cookbook](NATURAL-LANGUAGE-COOKBOOK.md)
 - [Guided authoring](GUIDED-AUTHORING.md)
 - [Data and reusable flows](DATA-AND-REUSE.md)
 - [Troubleshooting](TROUBLESHOOTING.md)

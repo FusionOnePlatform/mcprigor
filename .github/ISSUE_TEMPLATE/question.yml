@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Check the [documentation](https://mcprigor.com) and the [natural-language cookbook](https://mcprigor.com/docs/plain-language-cookbook.html) first — your scenario may already have a copy-ready example.
+        Check the [documentation](https://mcprigor.com) and the [natural-language cookbook](https://mcprigor.com/docs/natural-language-cookbook.html) first — your scenario may already have a copy-ready example.
   - type: textarea
     id: question
     attributes:

@@ -126,7 +126,7 @@ mcp-acceptance-tests/
 
 ## Next steps
 
-- [Plain-language cookbook](PLAIN-LANGUAGE-COOKBOOK.md)
+- [Natural-language cookbook](NATURAL-LANGUAGE-COOKBOOK.md)
 - [QA workspace](QA-WORKSPACE.md)
 - [Engineer setup and CI](ENGINEER-SETUP.md)
 - [Troubleshooting](TROUBLESHOOTING.md)
