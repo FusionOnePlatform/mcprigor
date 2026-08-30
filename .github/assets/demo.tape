@@ -1,35 +1,42 @@
 # VHS tape for the README demo GIF — https://github.com/charmbracelet/vhs
+# The CLI segment of the enterprise showcase. Records against a real MCP server.
 Output demo.gif
 
-Set FontSize 17
+Set FontSize 19
 Set FontFamily "Menlo"
-Set Width 960
-Set Height 600
+Set Width 1080
+Set Height 650
 Set Theme "Catppuccin Mocha"
-Set Padding 16
-Set TypingSpeed 35ms
+Set Padding 20
+Set TypingSpeed 24ms
 
 Hide
 Type "cd /tmp/mcprigor-demo && clear"
 Enter
 Show
 
-Type "# A natural-language MCP test — no code, no AI interpretation"
-Sleep 900ms
+Type "# MCP release governance — deterministic, no AI at runtime"
+Sleep 1s
 Enter
-Type "cat orders.mcpr"
-Sleep 300ms
+Type "cat order.mcpr"
 Enter
-Sleep 2.6s
+Sleep 2.8s
 
-Type "npx mcprigor check orders.mcpr"
-Sleep 300ms
+Type "npx mcprigor check order.mcpr"
 Enter
-Sleep 2.2s
+Sleep 1.8s
 
-Type "npx mcprigor test orders.mcpr"
-Sleep 300ms
+Type "npx mcprigor convert order.mcpr --out order.yaml"
+Enter
+Sleep 1.6s
+
+Type "npx mcprigor test order.yaml --html report.html"
 Enter
 Sleep 3.4s
 
-Sleep 1.6s
+Type "npx mcprigor publish order.mcpr --out shareable-report"
+Enter
+Sleep 3.2s
+
+Type "# One suite. English or YAML. Local, CI, monitoring, evidence."
+Sleep 2.4s

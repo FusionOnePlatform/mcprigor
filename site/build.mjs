@@ -307,7 +307,7 @@ const LANDING = `
   <div class="demo-grid">
     <article class="demo-card demo-featured">
       <h3>Visual QA workspace</h3>
-      <p>Author with autocomplete, select multiple suites, run a batch, then inspect results, history, and trends.</p>
+      <p>Author in plain language, run a suite, then open the HTML report or publish it to a shareable URL — export, timeline, and history in one place.</p>
       <video class="demo-video" autoplay loop muted playsinline preload="metadata" aria-label="MCP Rigor visual QA workspace demo">
         <source src="./assets/workspace-demo.mp4" type="video/mp4">
         <img src="./assets/workspace-demo.gif" alt="MCP Rigor visual QA workspace demo" loading="lazy">
@@ -323,7 +323,7 @@ const LANDING = `
     </article>
     <article class="demo-card">
       <h3>CLI and CI</h3>
-      <p>Check deterministic wording, then run the suite against a live MCP server from any terminal or pipeline.</p>
+      <p>Check the wording, convert English to equivalent YAML, run against a live server, and publish evidence — from any terminal or pipeline.</p>
       <video class="demo-video" autoplay loop muted playsinline preload="metadata" aria-label="MCP Rigor CLI demo">
         <source src="./assets/demo.mp4" type="video/mp4">
         <img src="./assets/demo.gif" alt="MCP Rigor CLI demo" loading="lazy">
