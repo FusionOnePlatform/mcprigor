@@ -241,7 +241,8 @@ async function main(): Promise<void> {
   const stateIn = flag(flags, "--state-in");
   const loadedState = stateIn ? await readState(resolve(stateIn), suite.target, flags.includes("--allow-state-target-mismatch")) : undefined;
   const evidenceDirectory = flag(flags, "--evidence");
-  const trace = evidenceDirectory ? new TraceRecorder(createRedactor([...(suite.redact ?? []), ...collectTargetSecrets(suite.target)])) : undefined;
+  const htmlFile = flag(flags, "--html");
+  const trace = (evidenceDirectory || htmlFile) ? new TraceRecorder(createRedactor([...(suite.redact ?? []), ...collectTargetSecrets(suite.target)])) : undefined;
   const snapshotFile = flag(flags, "--snapshot");
   if (flags.includes("--update-snapshots") && !snapshotFile && !suite.snapshots?.file) throw new UsageError("--update-snapshots requires --snapshot FILE or suite snapshot configuration");
   const retries = numericFlag(flags, "--retries");
@@ -264,7 +265,7 @@ async function main(): Promise<void> {
   const junit = flag(flags, "--junit");
   const csvOut = flag(flags, "--csv");
   const pdfOut = flag(flags, "--pdf");
-  const html = flag(flags, "--html");
+  const html = htmlFile;
   if (flags.includes("--github-annotations") || (process.env.GITHUB_ACTIONS === "true" && !flags.includes("--no-github-annotations"))) console.log("\n" + githubAnnotations(result, file));
   if (json) await writeJsonReport(result, json);
   if (junit) await writeJunitReport(result, junit);
@@ -287,7 +288,7 @@ async function main(): Promise<void> {
     }
     if (perfFailed && result.status === "passed") { console.error("\nLatency gate failed."); process.exitCode = 1; }
   }
-  if (html) { await writeHtmlReport(result, html); console.log(`\nReadable report: ${html}`); }
+  if (html) { const { buildTimeline } = await import("./timeline.js"); await writeHtmlReport(result, html, trace ? buildTimeline(trace.events) : undefined); console.log(`\nReadable report: ${html}`); }
   if (evidenceDirectory && trace) { const manifest = await writeEvidenceBundle(evidenceDirectory, result, suite.target, trace); console.log(`\nEvidence bundle: ${evidenceDirectory}\nNormalized trace: ${manifest.normalizedTraceHash}`); }
   const stateOut = flag(flags, "--state-out");
   if (stateOut && result.status === "passed") { await writeState(resolve(stateOut), suite.target, suite, result.outputs); console.log(`\nSaved reusable outputs: ${stateOut}`); }
@@ -400,6 +401,8 @@ Start here:
   mcprigor check my-tests.mcpr      Check the wording before running
   mcprigor test my-tests.mcpr       Run the tests
   mcprigor test my-tests.mcpr --html report.html
+                                      Readable report with a clickable
+                                      request/response session timeline
   mcprigor test my-tests.mcpr --command "node dist/server.js"
                                       Override the suite's declared target
   mcprigor test my-tests.mcpr --url https://qa.example.com/mcp
