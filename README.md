@@ -153,7 +153,7 @@ Expect "content[0].text" contains "complete"
 Expect "items" has 3 items
 ```
 
-See the [natural-language cookbook](docs/PLAIN-LANGUAGE-COOKBOOK.md) for copy-ready examples.
+See the [natural-language cookbook](docs/NATURAL-LANGUAGE-COOKBOOK.md) for copy-ready examples.
 
 ## Compare local and deployed behavior
 
@@ -264,7 +264,7 @@ The VS Code extension in [`editors/vscode`](editors/vscode) adds syntax highligh
 ## Choose your next guide
 
 - **New QA user:** [Getting started](docs/GETTING-STARTED.md)
-- **Writing scenarios:** [Natural-language cookbook](docs/PLAIN-LANGUAGE-COOKBOOK.md)
+- **Writing scenarios:** [Natural-language cookbook](docs/NATURAL-LANGUAGE-COOKBOOK.md)
 - **Using the browser UI:** [QA workspace](docs/QA-WORKSPACE.md)
 - **Setting up targets and CI:** [Engineer setup](docs/ENGINEER-SETUP.md)
 - **Fixing failures:** [Troubleshooting](docs/TROUBLESHOOTING.md)

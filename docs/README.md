@@ -5,7 +5,7 @@ Choose the path that matches your role.
 ## QA authors
 
 1. [Getting started](GETTING-STARTED.md) — install, connect, and run your first test.
-2. [Plain-language cookbook](PLAIN-LANGUAGE-COOKBOOK.md) — copy-ready scenarios and assertions.
+2. [Natural-language cookbook](NATURAL-LANGUAGE-COOKBOOK.md) — copy-ready scenarios and assertions.
 3. [QA workspace](QA-WORKSPACE.md) — edit and run tests in a browser.
 4. [Data and reusable flows](DATA-AND-REUSE.md) — tables, files, functions, and shared flows.
 5. [Troubleshooting](TROUBLESHOOTING.md) — understand errors and fix common failures.

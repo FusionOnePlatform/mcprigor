@@ -64,7 +64,7 @@ const FAQ = [
 const NAV = [
   { section: "Start here", pages: [
     ["GETTING-STARTED", "Getting started"],
-    ["PLAIN-LANGUAGE-COOKBOOK", "Natural-language cookbook"],
+    ["NATURAL-LANGUAGE-COOKBOOK", "Natural-language cookbook"],
     ["QA-GUIDE", "QA guide"],
     ["QA-WORKSPACE", "QA workspace"],
     ["MCP-SERVER", "MCP server for AI agents"],
@@ -253,7 +253,7 @@ ${jsonLd([APP_LD, ORG_LD, ...breadcrumb, ...extraLd])}
   <nav class="topnav">
     <a href="${prefix}/docs/getting-started.html">Docs</a>
     <a href="${prefix}/docs/cli-reference.html">CLI</a>
-    <a href="${prefix}/docs/plain-language-cookbook.html">Cookbook</a>
+    <a href="${prefix}/docs/natural-language-cookbook.html">Cookbook</a>
     <a href="https://www.npmjs.com/package/mcprigor" target="_blank" rel="noopener">npm</a>
     <a href="https://github.com/FusionOnePlatform/mcprigor" target="_blank" rel="noopener">GitHub</a>
     ${FUNDING}
@@ -292,7 +292,7 @@ const LANDING = `
   <p class="funded-hero">An open-source project proudly <strong>funded by <a href="https://www.loopiq.com" target="_blank" rel="noopener">LoopIQ</a></strong>.</p>
   <div class="cta">
     <a class="button primary" href="./docs/getting-started.html">Get started</a>
-    <a class="button" href="./docs/plain-language-cookbook.html">See examples</a>
+    <a class="button" href="./docs/natural-language-cookbook.html">See examples</a>
   </div>
   <pre class="hero-code"><code>Test: "An active customer can be found"
   Call tool "find_customer" with:

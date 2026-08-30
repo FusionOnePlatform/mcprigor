@@ -1,4 +1,4 @@
-# Plain-language cookbook
+# Natural-language cookbook
 
 Copy a pattern, replace the names and values, then run `mcprigor check FILE`.
 
