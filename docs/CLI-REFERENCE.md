@@ -165,6 +165,16 @@ mcprigor drift suite.mcpr --against mcp.lock.yaml --env prod
 
 The selected environment replaces the suite's declared target and is announced in the output. With a `default:` set, plain `mcprigor test suite.mcpr` uses it automatically. `--command`/`--url` overrides still win over the environment when both are given. An environment value can be a command string, a URL string, or a mapping with `server`/`cwd`/`env` (stdio) or `url`/`headers`/`token from` (HTTP).
 
+## Latency budgets and regression gate
+
+```bash
+mcprigor test suite.mcpr --fail-on-regression
+```
+
+- `Expect the call to finish within 800ms` fails one step when the live call exceeds the limit (`MCP-PERF-001`).
+- `Budget: p95 500ms over 20 calls` (suite-wide) and `Budget for "test name": p50 300ms` are judged after every run against recorded history plus the current run; a blown budget fails the run.
+- `--fail-on-regression` compares each passed test against the median of its recent history and fails when a test runs slower than 1.5x baseline (50 ms floor, needs 5 recorded samples). No thresholds to maintain — the baseline is the trend.
+
 ## Export reports (PDF, CSV, JUnit)
 
 Every run can be exported in machine- and human-friendly formats:

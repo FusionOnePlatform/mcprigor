@@ -127,6 +127,7 @@ async function runTest(
         let response: unknown;
         try { response = await session.request(operation.method, operation.params, step.timeoutMs ?? suite.defaults?.timeoutMs ?? 10_000); assertResponse(response, replaceVariables(step.assert, variables) as typeof step.assert); }
         catch (error) { assertError(error, step.assert); response = errorObject(error); }
+        if (step.assert?.maxDurationMs !== undefined) { const took = Date.now() - stepStarted; if (took > step.assert.maxDurationMs) throw new Error(`MCP-PERF-001 The call took ${took} ms, over the ${step.assert.maxDurationMs} ms limit`); }
         const snapshotAssertions = Array.isArray(step.assert?.json) ? step.assert.json : step.assert?.json ? [step.assert.json] : [];
         for (const snapshot of snapshotAssertions) if (snapshot.snapshot) snapshots.match(`${testId(test)}.${snapshot.snapshot.name}`, readPath(response, snapshot.path), snapshot.snapshot.ignore);
         for (const [key, path] of Object.entries(step.capture ?? {})) { const captured = readPath(response, path); if (captured === undefined) throw new Error(`MCP-CAPTURE-001 Capture ${key} found no value at ${path}`); variables[key] = captured; }

@@ -8,6 +8,13 @@ export const suiteSchema = {
     name: { type: "string", minLength: 1 },
     target: { $ref: "#/$defs/target" },
     targets: { type: "object", minProperties: 2, additionalProperties: { $ref: "#/$defs/target" } },
+    budgets: {
+      type: "array",
+      items: {
+        type: "object", additionalProperties: false, required: ["test", "percentile", "maxMs"],
+        properties: { test: { type: "string", minLength: 1 }, percentile: { type: "number", minimum: 1, maximum: 100 }, maxMs: { type: "integer", minimum: 1 }, window: { type: "integer", minimum: 1, maximum: 1000 } },
+      },
+    },
     defaults: {
       type: "object", additionalProperties: false,
       properties: { timeoutMs: { type: "integer", minimum: 1, maximum: 600000 } },
@@ -75,6 +82,7 @@ export const suiteSchema = {
     assertBlock: {
       type: "object", additionalProperties: false,
       properties: {
+        maxDurationMs: { type: "integer", minimum: 1, maximum: 600000 },
         status: { enum: ["success", "error"] },
         error: {
           type: "object", additionalProperties: false,

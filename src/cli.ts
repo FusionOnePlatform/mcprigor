@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { readFile, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { relative, resolve } from "node:path";
 import YAML from "yaml";
 import { authorTest, createReadlinePromptAdapter } from "./author.js";
 import { checkContract, compareContracts, contractMarkdown, contractReport, readContract, updateContract } from "./contract.js";
@@ -159,7 +159,7 @@ async function main(): Promise<void> {
   }
   if (command !== "run" && command !== "test") throw new UsageError(`Unknown command: ${command}. Try: mcprigor --help`);
 
-  assertKnownFlags(flags, ["--test", "--html", "--json", "--junit", "--evidence", "--snapshot", "--update-snapshots", "--state-in", "--state-out", "--allow-state-target-mismatch", "--allow-remote-data", "--allow-custom-code", "--max-rows", "--command", "--url", "--watch", "--github-annotations", "--no-github-annotations", "--retries", "--quarantine", "--env", "--csv", "--pdf"]);
+  assertKnownFlags(flags, ["--test", "--html", "--json", "--junit", "--evidence", "--snapshot", "--update-snapshots", "--state-in", "--state-out", "--allow-state-target-mismatch", "--allow-remote-data", "--allow-custom-code", "--max-rows", "--command", "--url", "--watch", "--github-annotations", "--no-github-annotations", "--retries", "--quarantine", "--env", "--csv", "--pdf", "--fail-on-regression"]);
   const suite = await loadTestFile(resolve(file), compileOptions);
   await applyEnvironment(suite, flag(flags, "--env"));
   applyTargetOverride(suite, flag(flags, "--command"), flag(flags, "--url"));
@@ -195,6 +195,24 @@ async function main(): Promise<void> {
   if (json) await writeJsonReport(result, json);
   if (junit) await writeJunitReport(result, junit);
   if (csvOut || pdfOut) { const { writeRunCsv, writeRunPdf } = await import("./export.js"); if (csvOut) await writeRunCsv(result, csvOut); if (pdfOut) await writeRunPdf(result, pdfOut); }
+  if (suite.budgets?.length || flags.includes("--fail-on-regression")) {
+    const { loadHistoryFor } = await import("./flaky.js");
+    const { checkBudgets, checkRegressions, budgetReport, regressionReport } = await import("./perf.js");
+    const entries = (await loadHistoryFor(process.cwd())).filter((entry) => entry.mode === "test");
+    const suitePath = relative(process.cwd(), resolve(file));
+    let perfFailed = false;
+    if (suite.budgets?.length) {
+      const outcomes = checkBudgets(suite, entries, suitePath, result);
+      console.log(budgetReport(outcomes));
+      if (outcomes.some((outcome) => !outcome.insufficient && !outcome.withinBudget)) perfFailed = true;
+    }
+    if (flags.includes("--fail-on-regression")) {
+      const outcomes = checkRegressions(entries, suitePath, result);
+      console.log(regressionReport(outcomes));
+      if (outcomes.some((outcome) => outcome.regressed)) perfFailed = true;
+    }
+    if (perfFailed && result.status === "passed") { console.error("\nLatency gate failed."); process.exitCode = 1; }
+  }
   if (html) { await writeHtmlReport(result, html); console.log(`\nReadable report: ${html}`); }
   if (evidenceDirectory && trace) { const manifest = await writeEvidenceBundle(evidenceDirectory, result, suite.target, trace); console.log(`\nEvidence bundle: ${evidenceDirectory}\nNormalized trace: ${manifest.normalizedTraceHash}`); }
   const stateOut = flag(flags, "--state-out");

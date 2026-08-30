@@ -302,6 +302,34 @@ Test: "summaries embed the sampled text"
 
 Suite-wide defaults live in a `Client behavior:` block; these per-test lines override them for one test.
 
+## Set latency budgets and catch slow releases
+
+Fail a single call that takes too long:
+
+```text
+Test: "order lookup is fast"
+  Call tool "find_order" with:
+    orderId: "A-1001"
+  Expect the call to finish within 800ms
+```
+
+Set suite-level budgets measured as percentiles over recorded run history (the same history behind `mcprigor trends`):
+
+```text
+Budget: p95 500ms over 20 calls
+Budget for "order lookup is fast": p50 300ms
+```
+
+Budgets are judged after each `mcprigor test` run and fail the run when a percentile exceeds its budget. Until enough history exists they report as pending instead of guessing.
+
+Gate CI on latency regressions against the trend baseline — no budget numbers needed:
+
+```bash
+mcprigor test suite.mcpr --fail-on-regression
+```
+
+A test regresses when it runs slower than 1.5x its historical median (with a 50 ms floor so micro-tests don't trip on jitter).
+
 ## Match a snapshot
 
 ```text
