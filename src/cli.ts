@@ -37,6 +37,23 @@ async function main(): Promise<void> {
     console.log(`✓ Created ${output}\n\nNext:\n  1. Open the file and set your server command or URL.\n  2. Change the example tool and expected result.\n  3. Run: mcprigor test ${output}`);
     return;
   }
+  if (command === "trends") {
+    assertKnownFlags(flags, ["--csv", "--pdf", "--json", "--suite", "--window"]);
+    const { loadHistoryFor } = await import("./flaky.js");
+    const { historyCsv, trendsCsv, trendsPdf } = await import("./export.js");
+    const allFlags = file?.startsWith("--") ? [file, ...flags] : flags;
+    const windowSize = Number(flag(allFlags, "--window") ?? 500);
+    const suiteFilter = flag(allFlags, "--suite") ?? (file && !file.startsWith("--") ? file : undefined);
+    let entries = (await loadHistoryFor(process.cwd())).filter((entry) => entry.mode === "test").slice(-Math.max(1, windowSize));
+    if (suiteFilter) entries = entries.filter((entry) => entry.suite === suiteFilter);
+    if (!entries.length) throw new UsageError(`No recorded runs found${suiteFilter ? ` for ${suiteFilter}` : ""}. Run tests first; history lives in .mcprigor/workspace-history.jsonl.`);
+    const csvOut = flag(allFlags, "--csv"); const pdfOut = flag(allFlags, "--pdf");
+    if (csvOut) { await writeFile(csvOut, csvOut.endsWith(".raw.csv") ? historyCsv(entries) : trendsCsv(entries), "utf8"); console.log(`Trends CSV written to ${csvOut}${csvOut.endsWith(".raw.csv") ? " (raw per-run rows)" : " (per-test aggregates)"}`); }
+    if (pdfOut) { await writeFile(pdfOut, trendsPdf(entries, suiteFilter)); console.log(`Trends PDF written to ${pdfOut}`); }
+    if (flags.includes("--json") || (!csvOut && !pdfOut)) process.stdout.write(trendsCsv(entries));
+    return;
+  }
+
   if (command === "record") {
     const out = flag([file ?? "", ...flags], "--out") ?? "recorded-tests.mcpr";
     const separator = process.argv.indexOf("--");
@@ -142,7 +159,7 @@ async function main(): Promise<void> {
   }
   if (command !== "run" && command !== "test") throw new UsageError(`Unknown command: ${command}. Try: mcprigor --help`);
 
-  assertKnownFlags(flags, ["--test", "--html", "--json", "--junit", "--evidence", "--snapshot", "--update-snapshots", "--state-in", "--state-out", "--allow-state-target-mismatch", "--allow-remote-data", "--allow-custom-code", "--max-rows", "--command", "--url", "--watch", "--github-annotations", "--no-github-annotations", "--retries", "--quarantine", "--env"]);
+  assertKnownFlags(flags, ["--test", "--html", "--json", "--junit", "--evidence", "--snapshot", "--update-snapshots", "--state-in", "--state-out", "--allow-state-target-mismatch", "--allow-remote-data", "--allow-custom-code", "--max-rows", "--command", "--url", "--watch", "--github-annotations", "--no-github-annotations", "--retries", "--quarantine", "--env", "--csv", "--pdf"]);
   const suite = await loadTestFile(resolve(file), compileOptions);
   await applyEnvironment(suite, flag(flags, "--env"));
   applyTargetOverride(suite, flag(flags, "--command"), flag(flags, "--url"));
@@ -171,10 +188,13 @@ async function main(): Promise<void> {
   console.log(terminalReport(result));
   const json = flag(flags, "--json");
   const junit = flag(flags, "--junit");
+  const csvOut = flag(flags, "--csv");
+  const pdfOut = flag(flags, "--pdf");
   const html = flag(flags, "--html");
   if (flags.includes("--github-annotations") || (process.env.GITHUB_ACTIONS === "true" && !flags.includes("--no-github-annotations"))) console.log("\n" + githubAnnotations(result, file));
   if (json) await writeJsonReport(result, json);
   if (junit) await writeJunitReport(result, junit);
+  if (csvOut || pdfOut) { const { writeRunCsv, writeRunPdf } = await import("./export.js"); if (csvOut) await writeRunCsv(result, csvOut); if (pdfOut) await writeRunPdf(result, pdfOut); }
   if (html) { await writeHtmlReport(result, html); console.log(`\nReadable report: ${html}`); }
   if (evidenceDirectory && trace) { const manifest = await writeEvidenceBundle(evidenceDirectory, result, suite.target, trace); console.log(`\nEvidence bundle: ${evidenceDirectory}\nNormalized trace: ${manifest.normalizedTraceHash}`); }
   const stateOut = flag(flags, "--state-out");
@@ -183,7 +203,7 @@ async function main(): Promise<void> {
   process.exitCode = result.status === "passed" ? 0 : 1;
 }
 
-const VALUE_FLAGS = new Set(["--test", "--html", "--json", "--junit", "--evidence", "--snapshot", "--state-in", "--state-out", "--max-rows", "--command", "--url", "--out", "--target", "--timeout", "--allow-tool", "--port", "--retries", "--window", "--env", "--against", "--fail-on"]);
+const VALUE_FLAGS = new Set(["--test", "--html", "--json", "--junit", "--evidence", "--snapshot", "--state-in", "--state-out", "--max-rows", "--command", "--url", "--out", "--target", "--timeout", "--allow-tool", "--port", "--retries", "--window", "--env", "--against", "--fail-on", "--csv", "--pdf", "--format"]);
 function assertKnownFlags(args: string[], known: string[]): void {
   const knownSet = new Set(known);
   for (let index = 0; index < args.length; index++) {
@@ -290,6 +310,11 @@ Start here:
   mcprigor test my-tests.mcpr --url https://qa.example.com/mcp
   mcprigor test my-tests.mcpr --watch
                                       Rerun on test or server file changes
+  mcprigor test my-tests.mcpr --csv report.csv --pdf report.pdf
+                                      Export the run as CSV rows / a PDF report
+  mcprigor trends [suite] [--csv out.csv] [--pdf out.pdf] [--window 500]
+                                      Export historical trends (pass rates,
+                                      durations) from recorded run history
   mcprigor test my-tests.mcpr --env qa
                                       Use a named environment from
                                       mcprigor.config.yaml (dev/qa/prod)

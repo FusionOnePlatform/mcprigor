@@ -90,6 +90,12 @@
       <input id="results-filter" type="search" placeholder="Search tests and results…" aria-label="Search tests and results">
     </div>
     <div id="panel-run" class="panel" role="tabpanel">
+      <div id="export-run" class="export-bar" hidden>
+        <span class="export-label">Export report:</span>
+        <button id="export-run-pdf" class="ghost small" type="button">PDF</button>
+        <button id="export-run-csv" class="ghost small" type="button">CSV</button>
+        <button id="export-run-junit" class="ghost small" type="button">JUnit XML</button>
+      </div>
       <div id="run-list"></div>
       <pre id="output" class="output"><span class="muted">Nothing has run yet.
 Open a test file and click ▶ Run tests — or select several files
@@ -99,6 +105,12 @@ with their checkboxes and run them together.</span></pre>
       <div id="history-list" class="history-list"><p class="muted pad">No runs recorded yet. History appears after the first ▶ Run.</p></div>
     </div>
     <div id="panel-trends" class="panel" role="tabpanel" hidden>
+      <div class="export-bar">
+        <span class="export-label">Export trends:</span>
+        <button id="export-trends-pdf" class="ghost small" type="button">PDF</button>
+        <button id="export-trends-csv" class="ghost small" type="button">CSV</button>
+        <button id="export-trends-raw" class="ghost small" type="button">Raw history CSV</button>
+      </div>
       <div id="trends" class="trends"><p class="muted pad">Trends appear after a few runs.</p></div>
     </div>
   </aside>

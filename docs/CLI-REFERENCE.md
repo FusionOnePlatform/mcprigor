@@ -165,6 +165,29 @@ mcprigor drift suite.mcpr --against mcp.lock.yaml --env prod
 
 The selected environment replaces the suite's declared target and is announced in the output. With a `default:` set, plain `mcprigor test suite.mcpr` uses it automatically. `--command`/`--url` overrides still win over the environment when both are given. An environment value can be a command string, a URL string, or a mapping with `server`/`cwd`/`env` (stdio) or `url`/`headers`/`token from` (HTTP).
 
+## Export reports (PDF, CSV, JUnit)
+
+Every run can be exported in machine- and human-friendly formats:
+
+```bash
+mcprigor test suite.mcpr --pdf report.pdf --csv report.csv --junit report.xml
+```
+
+- `--pdf` — a designed report: summary cards, pass-rate bar, per-test table with status pills, failure detail, and the evidence hash. No dependencies; opens anywhere.
+- `--csv` — one row per test (`suite,test,status,durationMs,retried,error,startedAt`) for spreadsheets and BI tools.
+- `--junit` — standard JUnit XML for CI dashboards (Jenkins, GitLab, Buildkite, Azure DevOps).
+
+Historical trends come from recorded run history (`.mcprigor/workspace-history.jsonl`):
+
+```bash
+mcprigor trends --pdf trends.pdf          # per-suite run timelines + per-test pass-rate bars
+mcprigor trends --csv trends.csv          # per-test aggregates (pass rate, avg duration)
+mcprigor trends --csv history.raw.csv     # a *.raw.csv name exports raw per-run rows instead
+mcprigor trends suite.mcpr --window 100   # limit to one suite / recent runs
+```
+
+The QA workspace has the same exports as buttons: **PDF / CSV / JUnit XML** above run results, and **PDF / CSV / Raw history CSV** on the Trends tab.
+
 ## Drift gate and flakiness
 
 CI gate for contract drift:

@@ -13,7 +13,7 @@ import type { RunResult } from "./types.js";
 import { FRAMEWORK_VERSION } from "./version.js";
 
 export interface WorkspaceOptions { root?: string; host?: string; port?: number }
-interface WorkspaceRunItem { suite: string; status: "running" | "passed" | "failed"; output: string; error?: string; startedAt: string; durationMs?: number; tests?: Array<{ name: string; status: string; durationMs: number; error?: string }> }
+interface WorkspaceRunItem { suite: string; status: "running" | "passed" | "failed"; output: string; error?: string; startedAt: string; durationMs?: number; tests?: Array<{ name: string; status: string; durationMs: number; error?: string }>; result?: RunResult }
 interface WorkspaceRun { id: string; mode: string; status: "running" | "passed" | "failed"; startedAt: string; items: WorkspaceRunItem[] }
 export interface HistoryEntry { at: string; mode: string; suite: string; status: "passed" | "failed"; durationMs: number; tests: Array<{ name: string; status: string; durationMs: number; error?: string }> }
 /** Files that share suite extensions but are never test suites. */
@@ -40,6 +40,30 @@ export async function startWorkspace(options: WorkspaceOptions = {}): Promise<{ 
     if (url.pathname === "/api/v1/validate" && method === "POST") { const body = await bodyJson(req) as any; const path = safePath(root, body.path); try { const suite = await loadTestFile(path); return json(res, 200, { valid: true, suite: { name: suite.name, tests: suite.tests.length, parityTargets: Object.keys(suite.targets ?? {}) } }); } catch (error) { const span = (error as { span?: { start?: { line?: number; column?: number } } }).span; return json(res, 200, { valid: false, diagnostics: [{ severity: "error", message: error instanceof Error ? error.message : String(error), ...(span?.start?.line ? { line: span.start.line, column: span.start.column ?? 1 } : {}) }] }); } }
     if (url.pathname === "/api/v1/runs" && method === "POST") { const body = await bodyJson(req) as any; const paths: unknown = Array.isArray(body?.paths) ? body.paths : typeof body?.path === "string" ? [body.path] : undefined; if (!body || !["test", "parity", "validate"].includes(body.mode) || !Array.isArray(paths) || !paths.length || paths.length > 20 || paths.some((item) => typeof item !== "string") || Object.keys(body).some((key) => !["path", "paths", "mode"].includes(key))) return json(res, 400, { error: { code: "MCP-WEB-400", message: "Run accepts 1-20 saved paths and test/parity/validate mode" } }); const resolved = (paths as string[]).map((item) => safePath(root, item)); const id = randomBytes(12).toString("hex"); const run: WorkspaceRun = { id, mode: body.mode, status: "running", startedAt: new Date().toISOString(), items: resolved.map((item) => ({ suite: relative(root, item), status: "running" as const, output: "Queued…", startedAt: new Date().toISOString() })) }; runs.set(id, run); void executeBatch(run, resolved); return json(res, 202, { runId: id }); }
     const runMatch = url.pathname.match(/^\/api\/v1\/runs\/([a-f0-9]+)$/); if (runMatch && method === "GET") { const run = runs.get(runMatch[1]!); return run ? json(res, 200, run) : json(res, 404, { error: { code: "MCP-WEB-404", message: "Run not found" } }); }
+    if (url.pathname === "/api/v1/export/run" && method === "GET") {
+      const run = runs.get(url.searchParams.get("id") ?? "");
+      const index = Number(url.searchParams.get("item") ?? 0);
+      const format = url.searchParams.get("format") ?? "pdf";
+      const item = run?.items[index];
+      if (!item?.result) return json(res, 404, { error: { code: "MCP-WEB-404", message: "No completed test result for that run item" } });
+      const { runPdf, runCsv } = await import("./export.js");
+      const { junitXml } = await import("./reporters.js");
+      const stem = basename(item.suite).replace(/\.[^.]+$/, "");
+      if (format === "csv") return download(res, `${stem}-report.csv`, "text/csv; charset=utf-8", Buffer.from(runCsv(item.result), "utf8"));
+      if (format === "junit") return download(res, `${stem}-junit.xml`, "application/xml; charset=utf-8", Buffer.from(junitXml(item.result), "utf8"));
+      return download(res, `${stem}-report.pdf`, "application/pdf", runPdf(item.result));
+    }
+    if (url.pathname === "/api/v1/export/trends" && method === "GET") {
+      const format = url.searchParams.get("format") ?? "pdf";
+      const suite = url.searchParams.get("suite") ?? undefined;
+      let entries = (await readHistory(join(root, ".mcprigor", "workspace-history.jsonl"))).filter((entry) => entry.mode === "test");
+      if (suite) entries = entries.filter((entry) => entry.suite === suite);
+      if (!entries.length) return json(res, 404, { error: { code: "MCP-WEB-404", message: "No recorded test runs yet" } });
+      const { trendsPdf, trendsCsv, historyCsv } = await import("./export.js");
+      if (format === "csv") return download(res, "mcprigor-trends.csv", "text/csv; charset=utf-8", Buffer.from(trendsCsv(entries), "utf8"));
+      if (format === "raw-csv") return download(res, "mcprigor-history.csv", "text/csv; charset=utf-8", Buffer.from(historyCsv(entries), "utf8"));
+      return download(res, "mcprigor-trends.pdf", "application/pdf", trendsPdf(entries, suite));
+    }
     if (url.pathname === "/api/v1/evidence" && method === "GET") return json(res, 200, { entries: await directoryEntries(join(root, ".mcprigor")) });
     if (url.pathname === "/api/v1/history" && method === "GET") { const suite = url.searchParams.get("suite") ?? undefined; const test = url.searchParams.get("test") ?? undefined; const entries = await readHistory(join(root, ".mcprigor", "workspace-history.jsonl")); const filtered = entries.filter((entry) => (!suite || entry.suite === suite) && (!test || entry.tests.some((item) => item.name === test))).slice(-200); return json(res, 200, { entries: filtered }); }
     return json(res, 404, { error: { code: "MCP-WEB-404", message: "Not found" } });
@@ -51,7 +75,7 @@ export async function startWorkspace(options: WorkspaceOptions = {}): Promise<{ 
         const suite = await loadTestFile(paths[index]!);
         if (run.mode === "validate") { item.status = "passed"; item.output = `✓ Valid — ${suite.tests.length} test${suite.tests.length === 1 ? "" : "s"} ready`; }
         else if (run.mode === "parity") { if (!suite.targets) throw new Error("This suite has no targets section for parity"); const result = await runParity(suite, suite.targets, { cwd: root }); item.output = parityReport(result); item.status = result.status; }
-        else { const result: RunResult = await runSuite(suite, { cwd: root }); item.output = terminalReport(result); item.status = result.status; item.tests = result.tests.map((test) => ({ name: test.name, status: test.status, durationMs: test.durationMs, ...(test.error ? { error: test.error } : {}) })); await appendHistory(join(root, ".mcprigor", "workspace-history.jsonl"), { at: new Date().toISOString(), mode: run.mode, suite: item.suite, status: result.status, durationMs: Date.now() - startedAt, tests: item.tests }); }
+        else { const result: RunResult = await runSuite(suite, { cwd: root }); item.result = result; item.output = terminalReport(result); item.status = result.status; item.tests = result.tests.map((test) => ({ name: test.name, status: test.status, durationMs: test.durationMs, ...(test.error ? { error: test.error } : {}) })); await appendHistory(join(root, ".mcprigor", "workspace-history.jsonl"), { at: new Date().toISOString(), mode: run.mode, suite: item.suite, status: result.status, durationMs: Date.now() - startedAt, tests: item.tests }); }
       } catch (error) { item.status = "failed"; item.error = error instanceof Error ? error.message : String(error); item.output = item.error; }
       item.durationMs = Date.now() - startedAt;
     }
@@ -84,4 +108,10 @@ function authorized(req: IncomingMessage, token: string, origin: string): boolea
 async function bodyJson(req: IncomingMessage): Promise<unknown> { const chunks: Buffer[] = []; let size = 0; for await (const chunk of req) { size += chunk.length; if (size > 1024 * 1024) throw new Error("Request body exceeds 1 MiB"); chunks.push(chunk); } return JSON.parse(Buffer.concat(chunks).toString("utf8")); }
 function securityHeaders(res: ServerResponse): void { res.setHeader("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"); res.setHeader("X-Content-Type-Options", "nosniff"); res.setHeader("Referrer-Policy", "no-referrer"); res.setHeader("Cache-Control", "no-store"); }
 async function asset(res: ServerResponse, path: string): Promise<void> { const content = await readFile(path); res.statusCode = 200; res.setHeader("Content-Type", extname(path) === ".js" ? "text/javascript; charset=utf-8" : extname(path) === ".css" ? "text/css; charset=utf-8" : "text/html; charset=utf-8"); res.end(content); }
+function download(res: ServerResponse, filename: string, type: string, body: Buffer): void {
+  res.statusCode = 200;
+  res.setHeader("Content-Type", type);
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+  res.end(body);
+}
 function json(res: ServerResponse, status: number, value: unknown): void { res.statusCode = status; res.setHeader("Content-Type", "application/json; charset=utf-8"); res.end(JSON.stringify(value)); }
