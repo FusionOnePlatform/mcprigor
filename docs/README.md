@@ -14,7 +14,7 @@ Choose the path that matches your role.
 
 - [Engineer setup](ENGINEER-SETUP.md) — targets, credentials, project layout, and CI.
 - [CLI reference](CLI-REFERENCE.md) — commands, options, outputs, and exit codes.
-- [Language reference](LANGUAGE-SPEC.md) — complete deterministic `.mcpr` syntax.
+- [Language reference](LANGUAGE-SPEC.md) — complete deterministic `.mcpr` syntax, in enforced parity with YAML via `mcprigor convert`.
 - [State and dependencies](STATE-AND-DEPENDENCIES.md) — share outputs across tests and runs.
 - [Data engineering](DATA-ENGINEERING.md) — types, filters, joins, samples, and caches.
 - [Transport parity](TRANSPORT-PARITY.md) — compare stdio and Streamable HTTP.
