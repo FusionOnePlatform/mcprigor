@@ -66,6 +66,17 @@ export const suiteSchema = {
             transport: { const: "streamable-http" }, url: { type: "string", minLength: 1 },
             headers: { type: "object", additionalProperties: { type: "string" } },
             tokenFrom: { type: "string" },
+            oauth: {
+              oneOf: [
+                { const: true },
+                {
+                  type: "object", additionalProperties: false,
+                  properties: {
+                    clientId: { type: "string" }, clientSecret: { type: "string" }, scope: { type: "string" },
+                  },
+                },
+              ],
+            },
           },
         },
       ],

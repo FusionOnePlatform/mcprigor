@@ -64,6 +64,15 @@ Server options:
     Authorization: "Bearer ${env.QA_TOKEN}"
 ```
 
+An HTTP target may fetch a bearer token at run time with `Token from` (a command whose single-line stdout becomes the `Authorization` header), or drive an interactive browser login with `OAuth`:
+
+```text
+Server options:
+  OAuth: oauth
+```
+
+`OAuth: oauth` performs an authorization-code + PKCE browser login once at the start of the run and carries the in-memory session (with automatic refresh) into every test. The block form takes optional `clientId`, `clientSecret` (use `${env.NAME}`), and `scope`. Tokens are never written to disk and are always redacted. See the [Authentication guide](AUTHENTICATION.md).
+
 ### Environment variables and secrets
 
 Any string value in a target block — a header, a URL, a `cwd`, an `env` entry, a `Server options` field — may contain `${env.NAME}` placeholders. Before the suite connects, each placeholder is replaced with the value of the operating-system environment variable `NAME`:

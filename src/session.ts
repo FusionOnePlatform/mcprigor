@@ -7,6 +7,7 @@ import {
   ResourceUpdatedNotificationSchema, ResultSchema, TaskStatusNotificationSchema, ToolListChangedNotificationSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import type { ClientBehavior, NativeEvent, NativeRequestOptions, NativeRequestResult, Target, TestSession, SessionInfo } from "./types.js";
+import type { InMemoryOAuthProvider } from "./oauth.js";
 import { RigorError } from "./errors.js";
 import { accessSync, constants } from "node:fs";
 import { delimiter, isAbsolute, join as joinPath, resolve as resolvePath } from "node:path";
@@ -21,7 +22,7 @@ function assertCommandExists(command: string, cwd?: string): void {
 }
 
 const activeSessions = new Set<TestSession>();
-export function createSession(target: Target): TestSession { const session = new SdkSession(target, () => activeSessions.delete(session)); activeSessions.add(session); return session; }
+export function createSession(target: Target, authProvider?: InMemoryOAuthProvider): TestSession { const session = new SdkSession(target, () => activeSessions.delete(session), authProvider); activeSessions.add(session); return session; }
 export async function shutdownSessions(): Promise<void> { await Promise.allSettled([...activeSessions].map((session) => session.close())); activeSessions.clear(); }
 export function installSignalCleanup(): () => void { const handler = () => { void shutdownSessions().finally(() => { process.exitCode = 130; }); }; process.once("SIGINT", handler); process.once("SIGTERM", handler); return () => { process.off("SIGINT", handler); process.off("SIGTERM", handler); }; }
 
@@ -30,7 +31,7 @@ class SdkSession implements TestSession {
   private readonly messages: string[] = []; private diagnosticBytes = 0; private readonly nativeEvents: NativeEvent[] = []; private sequence = 0;
   private behavior: ClientBehavior = {}; private transport?: StdioClientTransport | StreamableHTTPClientTransport;
   private waiters: Array<{ method: string; resolve: (event: NativeEvent) => void; reject: (error: Error) => void; timer: NodeJS.Timeout }> = [];
-  constructor(private readonly target: Target, private readonly disposed: () => void) { this.installHandlers(); }
+  constructor(private readonly target: Target, private readonly disposed: () => void, private readonly authProvider?: InMemoryOAuthProvider) { this.installHandlers(); }
 
   configureClient(behavior: ClientBehavior): void { this.behavior = behavior; }
   async connect(): Promise<SessionInfo> {
@@ -45,7 +46,9 @@ class SdkSession implements TestSession {
         const token = await fetchToken(this.target.tokenFrom);
         headers = { ...headers, Authorization: `Bearer ${token}` };
       }
-      this.transport = new StreamableHTTPClientTransport(new URL(this.target.url), { requestInit: { headers } });
+      this.transport = this.authProvider
+        ? new StreamableHTTPClientTransport(new URL(this.target.url), { authProvider: this.authProvider as never, requestInit: headers ? { headers } : undefined })
+        : new StreamableHTTPClientTransport(new URL(this.target.url), { requestInit: { headers } });
     }
     try { await this.client.connect(this.transport, { timeout: 10_000 }); }
     catch (error) { await this.client.close().catch(() => {}); this.disposed(); const message = error instanceof Error ? error.message : String(error); if (/ENOENT|spawn/i.test(message)) throw new RigorError("server-spawn", "MCP-SPAWN-001", message, undefined, error); throw new RigorError(/timeout/i.test(message) ? "timeout" : "initialization", /timeout/i.test(message) ? "MCP-TIMEOUT-001" : "MCP-INIT-001", message, undefined, error); }

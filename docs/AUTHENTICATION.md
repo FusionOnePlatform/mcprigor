@@ -111,6 +111,55 @@ QA authors then write ordinary tests and select a target per run:
 mcprigor test suite.mcpr --env qa
 ```
 
+## 5. Interactive browser-redirect OAuth
+
+Some servers require a real user to sign in through a browser (OAuth authorization-code flow) rather than a machine credential. MCP Rigor can drive that flow: it performs the login **once at the start of the run**, then carries the authorized session — with automatic token refresh — into every test in the suite.
+
+Opt in with the `OAuth` option:
+
+```text
+MCP URL: https://app.example.com/mcp
+
+Server options:
+  OAuth: oauth
+
+Test: "an authenticated call succeeds"
+  Call tool "find_order" with:
+    orderId: "A-1001"
+  Expect "structuredContent.status" equals "shipped"
+```
+
+Run it:
+
+```bash
+mcprigor test orders.mcpr
+```
+
+What happens:
+
+1. MCP Rigor connects, discovers the server's OAuth metadata, and starts a PKCE authorization-code flow (registering a client dynamically if the server supports it).
+2. Your system browser opens to the identity provider. If it cannot open — a headless machine — the authorization URL is printed so you can open it elsewhere.
+3. You sign in and consent. The provider redirects to a short-lived `http://127.0.0.1` loopback listener that MCP Rigor runs only for the login.
+4. MCP Rigor exchanges the authorization code for tokens **in memory**, then runs the whole suite on that session. When an access token expires mid-run, the refresh token renews it silently — no second prompt.
+
+The session lives only in the current process. Nothing is written to disk, and the access and refresh tokens are registered with the redactor, so they never appear in reports, evidence bundles, or published URLs.
+
+### Pre-registered clients and scopes
+
+When the server does not support dynamic registration, or you need specific scopes, use the block form. Keep any secret in the environment and reference it with `${env.NAME}`:
+
+```text
+Server options:
+  OAuth:
+    clientId: "mcprigor-qa"
+    clientSecret: "${env.OAUTH_CLIENT_SECRET}"
+    scope: "openid orders.read"
+```
+
+### Using it in CI
+
+Interactive OAuth needs a human at a browser, so it is meant for local authoring and exploratory runs. For unattended CI, use a non-interactive credential instead — a `Token from` client-credentials helper (section 3) or a service-account bearer token (section 1). The same suite can select either through [project environments](#4-define-auth-once-with-project-environments): `OAuth: oauth` for the developer's `dev` target, a `token from` command for the `ci` target.
+
 ## Auth on other target surfaces
 
 The same `headers` and `Token from` grammar applies wherever a target is declared:
@@ -138,15 +187,21 @@ Inject secrets through the CI provider's secret store — nothing about auth cha
   run: npx mcprigor test tests/*.mcpr
 ```
 
-## What is out of scope
+## Scope and limits
 
-MCP Rigor does not run an interactive browser-redirect OAuth authorization-code flow itself. An acceptance run must be repeatable without a human in the loop, so the expected pattern is to obtain the token non-interactively — a client-credentials exchange, a service account, or a `Token from` helper — and let MCP Rigor consume the result.
+- Interactive OAuth covers the **authorization-code + PKCE** flow with automatic **refresh**, including dynamic client registration when the server supports it. This is the common enterprise IdP path (Auth0, Okta, Entra ID, Google, Keycloak).
+- The captured session is **in-memory for one run**. It is carried across every test in that run but is not persisted, so a separate later run signs in again. This keeps tokens off disk by design.
+- The interactive login applies to the **test runner** (`mcprigor test`, workspace, monitor). One-shot inspection commands that open their own single connection — `author`, `discover`, `audit`, `replay` — expect a non-interactive credential (`headers` or `Token from`).
+- For unattended CI, prefer a non-interactive credential; a browser flow cannot complete without a human.
 
 ## Troubleshooting
 
 - `Environment variable not found: NAME` — the referenced variable is unset in the process that ran MCP Rigor. Export it or pass it inline.
 - `MCP-AUTH-001` — the `Token from` command was empty.
 - `MCP-AUTH-002 Token from command failed` — the fetch command errored, printed nothing, or printed more than a single token. See [Troubleshooting](TROUBLESHOOTING.md).
+- `MCP-OAUTH-001` — the server did not advertise an OAuth authorization URL, or token exchange returned no access token. Confirm the server exposes protected-resource metadata.
+- `MCP-OAUTH-002` — timed out waiting for the browser authorization to complete. Finish the sign-in, or raise the timeout.
+- `MCP-OAUTH-004` — the identity provider reported that authorization was denied.
 - A `401`/`unauthorized` body in a failure message means the request reached the server but the token was rejected — check its value and expiry.
 
 ## Related
