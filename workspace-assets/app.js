@@ -548,3 +548,62 @@ $('refresh').onclick = () => refreshList().then(n => { if (!n && !state.path) sh
 $('filter').addEventListener('input', renderList);
 setEnabled(false);
 start().catch(show);
+
+/* ---------- resizable panels ---------- */
+(() => {
+  const mainEl = document.querySelector('main');
+  const KEY = 'mcprigor.panels';
+  const apply = (side, results) => {
+    if (side) mainEl.style.setProperty('--col-side', side);
+    if (results) mainEl.style.setProperty('--col-results', results);
+  };
+  try { const saved = JSON.parse(localStorage.getItem(KEY) || '{}'); apply(saved.side, saved.results); } catch {}
+  const save = () => {
+    try { localStorage.setItem(KEY, JSON.stringify({
+      side: mainEl.style.getPropertyValue('--col-side') || undefined,
+      results: mainEl.style.getPropertyValue('--col-results') || undefined,
+    })); } catch {}
+  };
+  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+  const wire = (id, compute, keyboardStep) => {
+    const splitter = document.getElementById(id);
+    if (!splitter) return;
+    splitter.addEventListener('pointerdown', (event) => {
+      event.preventDefault();
+      splitter.setPointerCapture(event.pointerId);
+      splitter.classList.add('dragging');
+      document.body.classList.add('resizing');
+      const move = (ev) => compute(ev.clientX);
+      const stop = () => {
+        splitter.classList.remove('dragging');
+        document.body.classList.remove('resizing');
+        splitter.removeEventListener('pointermove', move);
+        splitter.removeEventListener('pointerup', stop);
+        splitter.removeEventListener('pointercancel', stop);
+        save();
+      };
+      splitter.addEventListener('pointermove', move);
+      splitter.addEventListener('pointerup', stop);
+      splitter.addEventListener('pointercancel', stop);
+    });
+    splitter.addEventListener('keydown', (event) => {
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+      event.preventDefault();
+      keyboardStep(event.key === 'ArrowLeft' ? -16 : 16);
+      save();
+    });
+    splitter.addEventListener('dblclick', () => {
+      mainEl.style.removeProperty('--col-side');
+      mainEl.style.removeProperty('--col-results');
+      try { localStorage.removeItem(KEY); } catch {}
+    });
+  };
+  const sideWidth = () => document.querySelector('.sidebar').getBoundingClientRect().width;
+  const resultsWidth = () => document.querySelector('.results').getBoundingClientRect().width;
+  wire('split-left',
+    (x) => apply(`${clamp(x - mainEl.getBoundingClientRect().left, 160, 480)}px`, null),
+    (delta) => apply(`${clamp(sideWidth() + delta, 160, 480)}px`, null));
+  wire('split-right',
+    (x) => { const rect = mainEl.getBoundingClientRect(); apply(null, `${clamp(rect.right - x, 240, rect.width - 500)}px`); },
+    (delta) => { const rect = mainEl.getBoundingClientRect(); apply(null, `${clamp(resultsWidth() - delta, 240, rect.width - 500)}px`); });
+})();
