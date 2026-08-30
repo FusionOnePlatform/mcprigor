@@ -6,6 +6,7 @@
 [![Node 20 | 22](https://img.shields.io/node/v/mcprigor?color=7C3AED)](https://www.npmjs.com/package/mcprigor)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 [![Website](https://img.shields.io/badge/docs-mcprigor.com-E879F9)](https://mcprigor.com)
+[![Listed on mcpservers.org](https://mcpservers.org/badge.svg)](https://mcpservers.org/servers/mcp-rigor)
 
 **Natural-language testing for Model Context Protocol servers.**
 
