@@ -247,7 +247,7 @@ Test: "Search behaves the same"
 
 ## When the token must be fetched first
 
-MCP Rigor does not perform OAuth login flows or token exchanges itself; tests stay deterministic and secrets stay outside test files. When a short-lived token must be acquired (client-credentials exchange, cloud CLI, vault), fetch it in the step before the run:
+When a short-lived token must be acquired non-interactively (client-credentials exchange, cloud CLI, vault), fetch it in the step before the run:
 
 ```bash
 QA_TOKEN=$(curl -s -X POST https://auth.example.com/oauth/token \
@@ -265,7 +265,29 @@ In CI, do the same in the workflow:
   run: npx mcprigor test tests/*.mcpr
 ```
 
-Interactive browser-redirect OAuth is out of scope by design: an acceptance run must be repeatable without a human in the loop.
+For CI and other unattended runs, obtain the token non-interactively as above. When a real user must sign in through a browser, use interactive OAuth instead (next recipe).
+
+## Sign in through the browser (interactive OAuth)
+
+When a server requires a real user login, let MCP Rigor run the browser authorization-code flow once and carry the authorized session — with automatic refresh — into every test in the run:
+
+```text
+MCP URL: https://app.example.com/mcp
+
+Server options:
+  OAuth: oauth
+
+Test: "an authenticated call succeeds"
+  Call tool "find_order" with:
+    orderId: "A-1001"
+  Expect "structuredContent.status" equals "shipped"
+```
+
+```bash
+mcprigor test orders.mcpr
+```
+
+Your browser opens to the identity provider; after you sign in, the tokens are held in memory (never written to disk, always redacted) and reused for the whole suite. For pre-registered clients or specific scopes, use the block form with `clientId`, `clientSecret: "${env.…}"`, and `scope`. Because it needs a human, keep interactive OAuth for local runs and use a non-interactive credential in CI. See the [Authentication guide](AUTHENTICATION.md) for the full flow.
 
 ## Fetch an OAuth token before connecting
 

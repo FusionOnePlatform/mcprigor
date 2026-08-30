@@ -38,7 +38,7 @@ export function compileQaLanguage(source: string, file = "test.mcpr"): Suite {
     if ((match = line.match(/^Server options for\s+["']([^"']+)["']:\s*$/i))) {
       const selected = servers[match[1]!]; if (!selected) fail(file, lineNumber, `Unknown named server “${match[1]}”. Declare it first.`);
       const block = readIndentedMap(lines, index, file); index = block.lastLine;
-      Object.assign(selected, selected.transport === "stdio" ? { cwd: block.value.cwd, env: block.value.env } : { headers: block.value.headers, ...tokenFromOption(block.value as Record<string, unknown>) }); continue;
+      Object.assign(selected, selected.transport === "stdio" ? { cwd: block.value.cwd, env: block.value.env } : httpOptions(block.value as Record<string, unknown>, file)); continue;
     }
     if ((match = line.match(/^(?:Compare|Parity) target\s+["']([^"']+)["']:\s*(.+)$/i))) {
       const label = match[1]!.trim(); const connection = match[2]!.trim();
@@ -49,7 +49,7 @@ export function compileQaLanguage(source: string, file = "test.mcpr"): Suite {
     if ((match = line.match(/^Target options for\s+["']([^"']+)["']:\s*$/i))) {
       const selected = targets[match[1]!]; if (!selected) fail(file, lineNumber, `Unknown parity target “${match[1]}”. Declare it first.`);
       const block = readIndentedMap(lines, index, file); index = block.lastLine;
-      Object.assign(selected, selected.transport === "stdio" ? { cwd: block.value.cwd, env: block.value.env } : { headers: block.value.headers, ...tokenFromOption(block.value as Record<string, unknown>) }); continue;
+      Object.assign(selected, selected.transport === "stdio" ? { cwd: block.value.cwd, env: block.value.env } : httpOptions(block.value as Record<string, unknown>, file)); continue;
     }
     if ((match = line.match(/^Budget(?:\s+for\s+["']([^"']+)["'])?:\s*p(\d{1,3})\s+(\d+)\s*(ms|milliseconds?|s|seconds?)(?:\s+over\s+(\d+)\s+(?:calls|runs|samples))?$/i))) {
       const maxMs = /^s/i.test(match[4]!) ? Number(match[3]) * 1000 : Number(match[3]);
@@ -61,7 +61,7 @@ export function compileQaLanguage(source: string, file = "test.mcpr"): Suite {
     if ((match = line.match(/^Snapshots:\s*(.+)$/i))) { snapshots = { file: unquote(match[1]!) }; continue; }
     if ((match = line.match(/^Ignore snapshot paths:\s*(.+)$/i))) { snapshots = { ...(snapshots ?? {}), ignore: match[1]!.split(",").map((item) => unquote(item.trim())) }; continue; }
     if (/^Client behavior:\s*$/i.test(line)) { const block = readIndentedMap(lines, index, file); index = block.lastLine; client = block.value as Suite["client"]; continue; }
-    if ((match = line.match(/^Server options:\s*$/i))) { if (!target) fail(file, lineNumber, "Declare Server or MCP URL before Server options."); const block = readIndentedMap(lines, index, file); index = block.lastLine; Object.assign(target, target.transport === "stdio" ? { cwd: block.value.cwd, env: block.value.env } : { headers: block.value.headers, ...tokenFromOption(block.value as Record<string, unknown>) }); continue; }
+    if ((match = line.match(/^Server options:\s*$/i))) { if (!target) fail(file, lineNumber, "Declare Server or MCP URL before Server options."); const block = readIndentedMap(lines, index, file); index = block.lastLine; Object.assign(target, target.transport === "stdio" ? { cwd: block.value.cwd, env: block.value.env } : httpOptions(block.value as Record<string, unknown>, file)); continue; }
     if ((match = line.match(/^Server:\s*(.+)$/i))) {
       const words = splitCommand(match[1]!, file, lineNumber);
       if (!words.length) fail(file, lineNumber, "Write a command after 'Server:'.");
@@ -241,6 +241,24 @@ function unquote(value: string): string {
 function tokenFromOption(value: Record<string, unknown>): { tokenFrom?: string } {
   const raw = value["Token from"] ?? value["token from"];
   return typeof raw === "string" && raw.trim() ? { tokenFrom: raw.trim() } : {};
+}
+function oauthOption(value: Record<string, unknown>, file: string): { oauth?: import("./types.js").OAuthConfig | true } {
+  const raw = value["OAuth"] ?? value["oauth"] ?? value["Auth"] ?? value["auth"];
+  if (raw === undefined) return {};
+  if (raw === true || (typeof raw === "string" && raw.trim().toLowerCase() === "oauth")) return { oauth: true };
+  if (typeof raw === "object" && raw !== null) {
+    const record = raw as Record<string, unknown>;
+    const config: import("./types.js").OAuthConfig = {};
+    const clientId = record.clientId ?? record["client id"]; if (typeof clientId === "string" && clientId.trim()) config.clientId = clientId.trim();
+    const clientSecret = record.clientSecret ?? record["client secret"]; if (typeof clientSecret === "string" && clientSecret.trim()) config.clientSecret = clientSecret.trim();
+    const scope = record.scope ?? record.scopes; if (typeof scope === "string" && scope.trim()) config.scope = scope.trim();
+    else if (Array.isArray(scope)) config.scope = scope.filter((s) => typeof s === "string").join(" ");
+    return { oauth: config };
+  }
+  fail(file, 0, `Invalid OAuth option. Write “OAuth: oauth” or an OAuth block with clientId/scope.`);
+}
+function httpOptions(value: Record<string, unknown>, file: string): Record<string, unknown> {
+  return { headers: value.headers, ...tokenFromOption(value), ...oauthOption(value, file) };
 }
 
 function readIndentedMap(lines: string[], start: number, file: string): { value: Record<string, unknown>; lastLine: number } {

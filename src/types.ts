@@ -6,12 +6,23 @@ export interface StdioTarget {
   env?: Record<string, string>;
 }
 
+export interface OAuthConfig {
+  /** Pre-registered public/confidential client id. Omit to rely on dynamic client registration. */
+  clientId?: string;
+  /** Confidential client secret. Kept in memory only; reference it with ${env.NAME} in suites. */
+  clientSecret?: string;
+  /** Space-delimited scopes requested during authorization. */
+  scope?: string;
+}
+
 export interface HttpTarget {
   transport: "streamable-http";
   url: string;
   headers?: Record<string, string>;
   /** Command executed before connect; its trimmed stdout becomes the Authorization bearer token. Keeps secrets out of suite files. */
   tokenFrom?: string;
+  /** Interactive browser-redirect OAuth. The login runs once per run; the in-memory session (with refresh) is carried into every test. */
+  oauth?: OAuthConfig | true;
 }
 
 export type Target = StdioTarget | HttpTarget;

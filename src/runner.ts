@@ -5,6 +5,7 @@ import { readPath, replaceVariables } from "./path.js";
 import { SnapshotStore } from "./snapshots.js";
 import { collectTargetSecrets, createRedactor } from "./redact.js";
 import { createSession } from "./session.js";
+import { InMemoryOAuthProvider, interactiveLogin } from "./oauth.js";
 import { traceSession, type TraceRecorder } from "./trace.js";
 import type { RunResult, SessionInfo, StepResult, Suite, TestCase, TestResult, TestSession, TestStep } from "./types.js";
 
@@ -20,6 +21,26 @@ async function resolveRunTarget(target: Suite["target"], options: RunOptions): P
   return resolved;
 }
 
+/**
+ * Run the one-time interactive browser login for every target that opted into
+ * OAuth, and return a provider per server key. Each provider holds the
+ * in-memory session so it is carried, with automatic refresh, into every test.
+ * A single loopback port is shared sequentially across targets.
+ */
+async function establishOAuth(targets: Map<string, Suite["target"]>, options: RunOptions): Promise<Map<string, InMemoryOAuthProvider>> {
+  const providers = new Map<string, InMemoryOAuthProvider>();
+  const basePort = options.oauth?.redirectPort ?? 8990;
+  let offset = 0;
+  for (const [key, target] of targets) {
+    if (target.transport !== "streamable-http" || !target.oauth) continue;
+    const config = target.oauth === true ? {} : target.oauth;
+    const provider = new InMemoryOAuthProvider(config, basePort + offset++);
+    await interactiveLogin(target.url, provider, { openBrowser: options.oauth?.openBrowser, notify: options.oauth?.notify, timeoutMs: options.oauth?.timeoutMs });
+    providers.set(key, provider);
+  }
+  return providers;
+}
+
 export interface RunOptions {
   filter?: string; sessionFactory?: typeof createSession; allowCustomCode?: boolean;
   retries?: number; quarantine?: Array<{ suite: string; test: string }>; suitePath?: string;
@@ -27,6 +48,8 @@ export interface RunOptions {
   trace?: TraceRecorder;
   snapshotFile?: string;
   updateSnapshots?: boolean;
+  /** Interactive OAuth controls (tests inject a fake user agent; CLI wires stderr prompts). */
+  oauth?: { openBrowser?: (url: string) => void; notify?: (message: string) => void; timeoutMs?: number; redirectPort?: number };
 }
 
 export async function runSuite(suite: Suite, options: RunOptions = {}): Promise<RunResult> {
@@ -37,7 +60,8 @@ export async function runSuite(suite: Suite, options: RunOptions = {}): Promise<
   targets.set("", await resolveRunTarget(suite.target, options));
   for (const [name, target] of Object.entries(suite.servers ?? {})) targets.set(name, await resolveRunTarget(target, options));
   for (const test of suite.tests) if (test.server && !targets.has(test.server)) throw new Error(`MCP-COMP-005 Test “${test.name}” selects unknown server “${test.server}”`);
-  const redactor = createRedactor([...(suite.redact ?? []), ...[...targets.values()].flatMap(collectTargetSecrets)]);
+  const oauthProviders = await establishOAuth(targets, options);
+  const redactor = createRedactor([...(suite.redact ?? []), ...[...targets.values()].flatMap(collectTargetSecrets), ...[...oauthProviders.values()].map((p) => p.currentAccessToken()).filter((t): t is string => !!t)]);
   const snapshots = new SnapshotStore({ file: options.snapshotFile ?? suite.snapshots?.file ?? "mcprigor.snap.json", update: options.updateSnapshots, ignore: suite.snapshots?.ignore });
   await snapshots.load();
   const functions = await createFunctionRegistry({ modules: suite.extensions?.functions, allowCustomCode: options.allowCustomCode, timeoutMs: options.functionTimeoutMs, cwd: options.cwd, permissions: suite.extensions?.permissions, allowlist: suite.extensions?.allowlist, unsafeLegacy: suite.extensions?.unsafeLegacy });
@@ -72,7 +96,7 @@ export async function runSuite(suite: Suite, options: RunOptions = {}): Promise<
     let outcome: Awaited<ReturnType<typeof runTest>> | undefined;
     for (let attempt = 1; attempt <= attempts; attempt++) {
       const selectedTarget = targets.get(test.server ?? "")!;
-      const baseSession = (options.sessionFactory ?? createSession)(selectedTarget);
+      const baseSession = (options.sessionFactory ?? createSession)(selectedTarget, oauthProviders.get(test.server ?? ""));
       const session = options.trace ? traceSession(baseSession, options.trace, () => traceContext) : baseSession;
       session.configureClient?.(suite.client ?? {});
       outcome = await runTest(suite, test, session, protocolVersions, redactor, functions, options.functionTimeoutMs, { state: expandDotted(options.state ?? {}), deps: dependencyVariables }, (step) => { traceContext = { testId: id, step }; }, snapshots);
