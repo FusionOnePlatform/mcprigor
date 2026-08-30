@@ -1,0 +1,74 @@
+name: MCP Rigor
+description: Run deterministic MCP tests, contract drift, and flaky detection with a rich PR comment
+author: FusionOnePlatform
+branding:
+  icon: check-circle
+  color: purple
+inputs:
+  suites:
+    description: Newline-separated .mcpr/YAML/JSON suites or glob patterns
+    required: true
+    default: "tests/**/*.mcpr"
+  lock:
+    description: Optional contract lock checked against the first suite
+    required: false
+  fail-on:
+    description: Drift gate (breaking, potentially-breaking, any, none)
+    required: false
+    default: breaking
+  node-version:
+    description: Node.js version
+    required: false
+    default: "22"
+  version:
+    description: MCP Rigor npm version
+    required: false
+    default: latest
+  comment:
+    description: Post or update a rich pull-request comment
+    required: false
+    default: "true"
+  flaky:
+    description: Include flaky-history warnings when history exists
+    required: false
+    default: "true"
+outputs:
+  status:
+    description: passed or failed
+    value: ${{ steps.rigor.outputs.status }}
+  report:
+    description: Path to the generated Markdown report
+    value: ${{ steps.rigor.outputs.report }}
+runs:
+  using: composite
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: npm
+    - name: Install MCP Rigor
+      shell: bash
+      run: npm install --no-save --ignore-scripts "mcprigor@${{ inputs.version }}"
+    - name: Run MCP Rigor checks
+      id: rigor
+      shell: bash
+      env:
+        INPUT_SUITES: ${{ inputs.suites }}
+        INPUT_LOCK: ${{ inputs.lock }}
+        INPUT_FAIL_ON: ${{ inputs.fail-on }}
+        INPUT_FLAKY: ${{ inputs.flaky }}
+      run: node "$GITHUB_ACTION_PATH/action/run.mjs"
+    - name: Publish job summary
+      if: always()
+      shell: bash
+      run: test -f "${{ steps.rigor.outputs.report }}" && cat "${{ steps.rigor.outputs.report }}" >> "$GITHUB_STEP_SUMMARY" || true
+    - name: Post pull-request report
+      if: always() && inputs.comment == 'true' && github.event_name == 'pull_request'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        REPORT_PATH: ${{ steps.rigor.outputs.report }}
+        REPOSITORY: ${{ github.repository }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+      run: test -f "$REPORT_PATH" && node "$GITHUB_ACTION_PATH/action/comment.mjs" || true
