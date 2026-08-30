@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -62,6 +62,12 @@ describe("QA workspace", () => {
       process.env.MCPRIGOR_PUBLISH_API = previous.api ?? ""; if (!previous.api) delete process.env.MCPRIGOR_PUBLISH_API;
     }
   }, 60_000);
+
+  it("uses item zero for a completed single-suite run so export and publish controls appear", async () => {
+    const script = await readFile("workspace-assets/app.js", "utf8");
+    expect(script).not.toContain("state.runSel || 0");
+    expect(script.match(/state\.runSel >= 0 \? state\.runSel : 0/g)).toHaveLength(4);
+  });
 
   it("hides publish capability without hosting configuration", async () => {
     const previous = { site: process.env.MCPRIGOR_PUBLISH_SITE, token: process.env.NETLIFY_AUTH_TOKEN };

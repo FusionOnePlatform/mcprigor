@@ -614,7 +614,7 @@ start().catch(show);
 function updateExportBar() {
   const run = state.run;
   const bar = $('export-run');
-  const index = state.runSel || 0;
+  const index = state.runSel >= 0 ? state.runSel : 0;
   const item = run && run.items && run.items[index];
   const ready = run && run.mode === 'test' && item && item.status !== 'running' && item.tests;
   bar.hidden = !ready;
@@ -629,13 +629,13 @@ function updateExportBar() {
 function exportRun(format) {
   const run = state.run;
   if (!run) return;
-  const index = state.runSel || 0;
+  const index = state.runSel >= 0 ? state.runSel : 0;
   window.open(`/api/v1/export/run?id=${encodeURIComponent(run.id)}&item=${index}&format=${format}`, '_blank');
 }
 async function publishRun() {
   const run = state.run;
   if (!run || state.publishing) return;
-  const index = state.runSel || 0;
+  const index = state.runSel >= 0 ? state.runSel : 0;
   state.publishing = true; updateExportBar();
   try {
     const value = await api('/api/v1/publish', { method: 'POST', body: JSON.stringify({ id: run.id, item: index }) });
@@ -651,7 +651,7 @@ async function publishRun() {
 $('export-run-html').onclick = () => {
   const run = state.run;
   if (!run) return;
-  window.open(`/api/v1/report?id=${encodeURIComponent(run.id)}&item=${state.runSel || 0}`, '_blank');
+  window.open(`/api/v1/report?id=${encodeURIComponent(run.id)}&item=${state.runSel >= 0 ? state.runSel : 0}`, '_blank');
 };
 $('publish-run').onclick = publishRun;
 $('export-run-pdf').onclick = () => exportRun('pdf');
