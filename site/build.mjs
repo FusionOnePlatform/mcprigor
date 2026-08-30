@@ -26,6 +26,9 @@ const DESCRIPTIONS = {
   "state-and-dependencies": "Share outputs between MCP Rigor tests and runs with dependencies, exports, and persisted state.",
   "transport-parity": "Compare MCP server behavior across stdio and Streamable HTTP transports and detect semantic differences automatically.",
   "performance-governance": "Set deterministic MCP latency assertions, percentile performance budgets, and CI regression gates backed by recorded history.",
+  "github-action": "Run MCP Rigor tests and contract drift in GitHub Actions with rich job summaries, flaky warnings, and update-in-place pull-request comments.",
+  "coverage": "Measure deterministic MCP contract coverage across tools, resources, prompts, templates, and input-schema branches with CI thresholds.",
+  "monitoring": "Continuously monitor production Streamable HTTP MCP endpoints, record trend history, and notify webhooks on failures and recoveries.",
   "multi-server-compositions": "Test multiple MCP servers as one mounted fleet, detect tool and schema collisions, and gate combined contract drift in CI.",
   "security-audit": "Run deterministic MCP security probes for malformed requests, spoofing, oversized payloads, traversal, prompt injection, and secret exposure with scored reports.",
   "contract-drift": "Lock an MCP server's contract with SHA-256 fingerprints and detect breaking, potentially breaking, and non-breaking drift in CI.",
@@ -50,6 +53,9 @@ const FAQ = [
   ["Can MCP Rigor enforce MCP performance budgets?", "Yes. Tests can set per-call latency limits, suite-level percentile budgets such as p95 over 20 calls, and a CI regression gate that compares current latency with recorded history."],
   ["Can MCP Rigor audit MCP server security?", "Yes. The deterministic audit pack probes malformed requests, tool-name spoofing, oversized payloads, resource path traversal, prompt injection, and secret-canary exposure. Tool execution requires an explicit allowlist."],
   ["Can MCP Rigor test multiple MCP servers together?", "Yes. Named-server compositions route tests to individual servers, detect tool and schema collisions across the mounted fleet, and create combined contract locks for fleet drift gates."],
+  ["Does MCP Rigor have a GitHub Action?", "Yes. The composite Action runs suites and contract drift, adds flaky-history warnings, writes a rich job summary, and creates or updates one pull-request comment."],
+  ["How does MCP Rigor measure test coverage?", "Coverage compares test references with the live discovered MCP contract: tools, resources, resource templates, prompts, input properties, enums, and union branches. CI can enforce a minimum score."],
+  ["Can MCP Rigor continuously monitor a production MCP server?", "Yes. Monitoring repeatedly runs a Streamable HTTP suite, appends results to trend history, and sends JSON webhooks on failures, recoveries, changes, or every run."],
 ];
 
 const NAV = [
@@ -72,6 +78,8 @@ const NAV = [
     ["TRANSPORT-PARITY", "Transport parity"],
     ["PERFORMANCE-GOVERNANCE", "Performance governance"],
     ["MULTI-SERVER-COMPOSITIONS", "Multi-server compositions"],
+    ["COVERAGE", "Coverage"],
+    ["GITHUB-ACTION", "GitHub Action"],
   ]},
   { section: "Contracts & evidence", pages: [
     ["CONTRACT-DRIFT", "Contract drift"],
@@ -83,6 +91,7 @@ const NAV = [
     ["EXTENSION-SDK", "Extension SDK"],
     ["ERROR-MODEL", "Error model"],
     ["SECURITY-AUDIT", "Deterministic security audit"],
+    ["MONITORING", "Scheduled monitoring"],
     ["SECURITY-AND-RETENTION", "Security & retention"],
     ["COMPATIBILITY", "Compatibility"],
   ]},
@@ -325,6 +334,9 @@ const LANDING = `
   <div class="card"><h3>Performance governance <span class="tag">Next release</span></h3><p>Fail slow calls immediately, enforce p50/p95 budgets over recorded history, and block latency regressions in CI without maintaining a separate baseline file. <a href="./docs/performance-governance.html">Performance guide →</a></p></div>
   <div class="card"><h3>Deterministic security audit <span class="tag">Next release</span></h3><p>Probe malformed requests, spoofed tools, oversized payloads, path traversal, prompt injection, and secret exposure — then export a scored rich PDF. <a href="./docs/security-audit.html">Audit guide →</a></p></div>
   <div class="card"><h3>Multi-server compositions <span class="tag">Next release</span></h3><p>Route scenarios across a mounted MCP fleet, detect tool/schema collisions, and gate combined contract drift with one stable composition lock. <a href="./docs/multi-server-compositions.html">Composition guide →</a></p></div>
+  <div class="card"><h3>GitHub Action <span class="tag">Next release</span></h3><p>Run suites and drift in CI, publish a rich job summary, and update one PR comment with pass tables, drift details, flaky warnings, and failures. <a href="./docs/github-action.html">Action guide →</a></p></div>
+  <div class="card"><h3>Coverage gate <span class="tag">Next release</span></h3><p>Find untested tools, prompts, resources, templates, properties, and enum/union branches; enforce <code>--fail-under 80</code>. <a href="./docs/coverage.html">Coverage guide →</a></p></div>
+  <div class="card"><h3>Production monitoring <span class="tag">Next release</span></h3><p>Schedule HTTP MCP tests, feed existing trends and performance baselines, and notify webhooks on failures and recoveries. <a href="./docs/monitoring.html">Monitoring guide →</a></p></div>
   <div class="card"><h3>For product owners</h3><p>Readable tests double as living acceptance criteria, and evidence bundles prove what was tested, against which server, and when.</p></div>
   <div class="card"><h3>Transport parity</h3><p>Run the same scenario against a local stdio server and a deployed Streamable HTTP endpoint and see exactly where behavior differs.</p></div>
   <div class="card"><h3>Data-driven</h3><p>Tables, CSV, JSON, YAML, Excel, REST, and Google Sheets — with typed columns, filters, joins, and seeded sampling.</p></div>
@@ -432,7 +444,10 @@ ${NAV.flatMap(({ section, pages }) => pages.map(([doc, label]) => `- [${label}](
 - Natural-language tests compile deterministically; the same sentence always produces the same test.
 - Test files use the .mcpr extension (not .mcp, which conflicts with other software).
 - Transports: local stdio subprocess and deployed Streamable HTTP.
-- CLI: init, check, test, author, parity, workspace, serve, audit, trends, composition-check, composition-discover, composition-drift, discover, generate, contract-check, contract-diff, contract-update, evidence-show, evidence-compare, snapshot-diff, replay.
+- CLI: init, check, test, author, parity, workspace, serve, audit, coverage, monitor, trends, composition-check, composition-discover, composition-drift, discover, generate, contract-check, contract-diff, contract-update, evidence-show, evidence-compare, snapshot-diff, replay.
+- GitHub Action: runs suites and drift, adds flaky warnings, writes a job summary, and updates one pull-request comment.
+- Coverage: tools, resources, templates, prompts, input properties, enums, oneOf, and anyOf with --fail-under gating.
+- Monitoring: scheduled Streamable HTTP checks, transition webhooks, and shared trend history.
 - Performance governance: per-call latency assertions, percentile budgets over history, and --fail-on-regression CI gating.
 - Deterministic security audit: malformed requests, spoofing, oversized payloads, path traversal, prompt injection, and secret-canary exposure; tool execution requires exact --allow-tool opt-in.
 - Multi-server compositions: per-test named-server routing, cross-server tool/schema/resource/prompt collision detection, stable combined locks, and fleet drift.

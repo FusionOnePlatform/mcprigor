@@ -20,6 +20,9 @@ Choose the path that matches your role.
 - [Transport parity](TRANSPORT-PARITY.md) — compare stdio and Streamable HTTP.
 - [Performance governance](PERFORMANCE-GOVERNANCE.md) — call limits, percentile budgets, and regression gates.
 - [Multi-server compositions](MULTI-SERVER-COMPOSITIONS.md) — route tests across a fleet and gate combined drift.
+- [Coverage](COVERAGE.md) — find untested MCP surfaces and input-schema branches.
+- [Scheduled monitoring](MONITORING.md) — continuously test production HTTP endpoints and notify webhooks.
+- [GitHub Action](GITHUB-ACTION.md) — test, drift, flaky warnings, and rich pull-request comments.
 
 ## Contracts and evidence
 
