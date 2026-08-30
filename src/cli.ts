@@ -49,6 +49,17 @@ async function main(): Promise<void> {
     if (result.score < threshold) { console.error(`\nCoverage gate failed: ${result.score}% is below --fail-under ${threshold}.`); process.exitCode = 1; }
     return;
   }
+  if (command === "monitor") {
+    if (!file || file.startsWith("--")) throw new UsageError("monitor requires an HTTP suite file");
+    assertKnownFlags(flags, ["--every", "--notify", "--notify-on", "--max-runs"]);
+    const every = requiredFlag(flags, "--every"); const notifyOn = flag(flags, "--notify-on") ?? "change";
+    if (!["failure", "recovery", "change", "always"].includes(notifyOn)) throw new UsageError("monitor --notify-on must be failure, recovery, change, or always");
+    const { monitorSuite, monitorLine, parseDuration } = await import("./monitor.js");
+    const controller = new AbortController(); const stop = () => controller.abort(); process.once("SIGINT", stop); process.once("SIGTERM", stop);
+    try { await monitorSuite(resolve(file), { cwd: process.cwd(), everyMs: parseDuration(every), notify: flag(flags, "--notify"), notifyOn: notifyOn as "failure" | "recovery" | "change" | "always", maxRuns: numericFlag(flags, "--max-runs"), signal: controller.signal, onRun: (event) => console.log(monitorLine(event)) }); }
+    finally { process.off("SIGINT", stop); process.off("SIGTERM", stop); }
+    return;
+  }
   if (command === "trends") {
     assertKnownFlags(flags, ["--csv", "--pdf", "--json", "--suite", "--window"]);
     const { loadHistoryFor } = await import("./flaky.js");
@@ -284,7 +295,7 @@ async function main(): Promise<void> {
   process.exitCode = result.status === "passed" ? 0 : 1;
 }
 
-const VALUE_FLAGS = new Set(["--test", "--html", "--json", "--junit", "--evidence", "--snapshot", "--state-in", "--state-out", "--max-rows", "--command", "--url", "--out", "--target", "--timeout", "--allow-tool", "--port", "--retries", "--window", "--env", "--against", "--fail-on", "--fail-under", "--csv", "--pdf", "--format"]);
+const VALUE_FLAGS = new Set(["--test", "--html", "--json", "--junit", "--evidence", "--snapshot", "--state-in", "--state-out", "--max-rows", "--command", "--url", "--out", "--target", "--timeout", "--allow-tool", "--port", "--retries", "--window", "--env", "--every", "--notify", "--notify-on", "--max-runs", "--against", "--fail-on", "--fail-under", "--csv", "--pdf", "--format"]);
 function assertKnownFlags(args: string[], known: string[]): void {
   const knownSet = new Set(known);
   for (let index = 0; index < args.length; index++) {
@@ -417,6 +428,9 @@ Start here:
   mcprigor coverage server.mcpr --fail-under 80 [--json coverage.json]
                                       Report untested tools, resources, prompts,
                                       templates, and input-schema branches
+  mcprigor monitor prod.mcpr --every 15m --notify https://hooks.example/rigor
+                                      Continuously monitor an HTTP MCP endpoint,
+                                      append history, and notify on transitions
 
 Multi-server compositions:
   mcprigor composition-check fleet.mcpr
