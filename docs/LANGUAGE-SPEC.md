@@ -1,6 +1,6 @@
 # MCP Test Language 1
 
-Status: compatibility-stable frontend for MCP Rigor 0.12.
+Status: compatibility-stable frontend for MCP Rigor 1.x.
 
 The `.mcpr` language and YAML compile to the same `Suite` runtime model. Every user-authored YAML capability has a deterministic plain-language equivalent; YAML remains available for generated files and programmatic integrations rather than being a more powerful test format.
 
@@ -62,6 +62,23 @@ Server options:
     Authorization: "Bearer ${env.QA_TOKEN}"
 ```
 
+Multi-server compositions use named server declarations and per-test routing:
+
+```text
+Named server "catalog": node services/catalog.js
+Named server "billing": https://qa.example.com/billing/mcp
+
+Server options for "billing":
+  headers:
+    X-Tenant: qa
+
+Test: "catalog lookup"
+  On server "catalog"
+  Call tool "search"
+```
+
+The YAML equivalent is a top-level `servers` mapping plus `server` on a test. A composition requires at least two named servers, and an unknown `On server` name is rejected during compilation.
+
 Parity targets use the same connection grammar:
 
 ```text
@@ -77,6 +94,8 @@ Suite-level YAML fields have direct equivalents:
 
 ```text
 Default timeout: 10 seconds
+Budget: p95 500ms over 20 calls
+Budget for "order lookup": p50 300ms over 20 calls
 Redact: "secret-value", "token-value"
 Snapshots: snapshots.json
 Ignore snapshot paths: "$.createdAt", "$.requestId"
@@ -94,11 +113,7 @@ Client behavior:
       approved: true
 ```
 
-## Imports
-
-```
-
-Per-test scripted responses (override `Client behavior:` for one test):
+Per-test scripted responses override `Client behavior:` for one test:
 
 ```text
 When the server asks for input, respond "accept" with:
@@ -106,7 +121,10 @@ When the server asks for input, respond "accept" with:
 When the server asks for input, respond "decline"
 When the server requests sampling, respond "scripted text"
 ```
-text
+
+## Imports
+
+```text
 Import flows from "./shared/customer-flows.mcpr"
 ```
 
@@ -183,6 +201,7 @@ Send "ping"
 ```text
 Expect it succeeds
 Expect an error
+Expect the call to finish within 800ms
 Expect "structuredContent.total" equals 2
 Expect "content[0].text" contains "complete"
 Expect "items" exists

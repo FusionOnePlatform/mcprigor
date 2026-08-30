@@ -84,6 +84,7 @@ blockquote { border-left: 4px solid var(--violet); background: var(--panel); mar
 .card:hover { border-color: var(--violet); }
 .card h3 { margin: 0 0 8px; }
 .card p { margin: 0; color: var(--muted); }
+.tag { display: inline-block; vertical-align: 2px; margin-left: 6px; padding: 2px 7px; border: 1px solid rgba(20,184,166,.45); border-radius: 999px; color: #5eead4; font-size: 10px; letter-spacing: .04em; text-transform: uppercase; }
 .quickstart, .loopiq { margin: 44px 0; }
 .quickstart h2, .loopiq h2 {
   background: var(--brand-grad); -webkit-background-clip: text; background-clip: text; color: transparent;
