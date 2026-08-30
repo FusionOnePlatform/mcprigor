@@ -37,6 +37,18 @@ async function main(): Promise<void> {
     console.log(`✓ Created ${output}\n\nNext:\n  1. Open the file and set your server command or URL.\n  2. Change the example tool and expected result.\n  3. Run: mcprigor test ${output}`);
     return;
   }
+  if (command === "coverage") {
+    if (!file || file.startsWith("--")) throw new UsageError("coverage requires a suite file");
+    assertKnownFlags(flags, ["--fail-under", "--json", "--markdown"]);
+    const suite = await loadTestFile(resolve(file), compileOptions);
+    const { measureCoverage, coverageReport, coverageMarkdown } = await import("./coverage.js");
+    const result = await measureCoverage(suite); const threshold = Number(flag(flags, "--fail-under") ?? 0);
+    if (!Number.isFinite(threshold) || threshold < 0 || threshold > 100) throw new UsageError("coverage --fail-under must be between 0 and 100");
+    console.log(flags.includes("--markdown") ? coverageMarkdown(result) : coverageReport(result));
+    const jsonOut = flag(flags, "--json"); if (jsonOut) await writeFile(jsonOut, JSON.stringify(result, null, 2) + "\n", "utf8");
+    if (result.score < threshold) { console.error(`\nCoverage gate failed: ${result.score}% is below --fail-under ${threshold}.`); process.exitCode = 1; }
+    return;
+  }
   if (command === "trends") {
     assertKnownFlags(flags, ["--csv", "--pdf", "--json", "--suite", "--window"]);
     const { loadHistoryFor } = await import("./flaky.js");
@@ -272,7 +284,7 @@ async function main(): Promise<void> {
   process.exitCode = result.status === "passed" ? 0 : 1;
 }
 
-const VALUE_FLAGS = new Set(["--test", "--html", "--json", "--junit", "--evidence", "--snapshot", "--state-in", "--state-out", "--max-rows", "--command", "--url", "--out", "--target", "--timeout", "--allow-tool", "--port", "--retries", "--window", "--env", "--against", "--fail-on", "--csv", "--pdf", "--format"]);
+const VALUE_FLAGS = new Set(["--test", "--html", "--json", "--junit", "--evidence", "--snapshot", "--state-in", "--state-out", "--max-rows", "--command", "--url", "--out", "--target", "--timeout", "--allow-tool", "--port", "--retries", "--window", "--env", "--against", "--fail-on", "--fail-under", "--csv", "--pdf", "--format"]);
 function assertKnownFlags(args: string[], known: string[]): void {
   const knownSet = new Set(known);
   for (let index = 0; index < args.length; index++) {
@@ -402,6 +414,9 @@ Start here:
   mcprigor audit server.mcpr --pdf audit.pdf --json audit.json
                                       Deterministic security probe pack; tool
                                       execution requires --allow-tool NAME
+  mcprigor coverage server.mcpr --fail-under 80 [--json coverage.json]
+                                      Report untested tools, resources, prompts,
+                                      templates, and input-schema branches
 
 Multi-server compositions:
   mcprigor composition-check fleet.mcpr
