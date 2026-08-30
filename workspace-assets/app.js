@@ -1,4 +1,4 @@
-const state = { csrf: '', path: '', etag: '', dirty: false, files: [], selected: new Set(), run: null, history: [], tab: 'run', runSel: -1 };
+const state = { csrf: '', path: '', etag: '', dirty: false, files: [], selected: new Set(), run: null, history: [], tab: 'run', runSel: -1, canPublish: false, publishing: false };
 const $ = id => document.getElementById(id);
 
 /* ---------- API ---------- */
@@ -14,6 +14,7 @@ async function api(path, options = {}) {
 async function start() {
   const boot = await api('/api/v1/bootstrap');
   state.csrf = boot.csrf;
+  state.canPublish = (boot.capabilities || []).includes('publish');
   $('version').textContent = `v${boot.version}`;
   $('workspace').textContent = `Folder: ${boot.root}`;
   $('connection').classList.add('ok');
@@ -615,7 +616,15 @@ function updateExportBar() {
   const bar = $('export-run');
   const index = state.runSel || 0;
   const item = run && run.items && run.items[index];
-  bar.hidden = !(run && run.mode === 'test' && item && item.status !== 'running' && item.tests);
+  const ready = run && run.mode === 'test' && item && item.status !== 'running' && item.tests;
+  bar.hidden = !ready;
+  const publish = $('publish-run');
+  const link = $('published-link');
+  publish.hidden = !(ready && state.canPublish);
+  publish.disabled = state.publishing;
+  publish.textContent = state.publishing ? 'Publishing…' : (item && item.publishedUrl ? 'Publish again' : 'Publish');
+  link.hidden = !(ready && item.publishedUrl);
+  if (item && item.publishedUrl) link.href = item.publishedUrl;
 }
 function exportRun(format) {
   const run = state.run;
@@ -623,6 +632,28 @@ function exportRun(format) {
   const index = state.runSel || 0;
   window.open(`/api/v1/export/run?id=${encodeURIComponent(run.id)}&item=${index}&format=${format}`, '_blank');
 }
+async function publishRun() {
+  const run = state.run;
+  if (!run || state.publishing) return;
+  const index = state.runSel || 0;
+  state.publishing = true; updateExportBar();
+  try {
+    const value = await api('/api/v1/publish', { method: 'POST', body: JSON.stringify({ id: run.id, item: index }) });
+    const item = run.items[index];
+    if (item) item.publishedUrl = value.url;
+    window.open(value.url, '_blank', 'noopener');
+  } catch (error) {
+    toast(error.message || 'Publish failed', true);
+  } finally {
+    state.publishing = false; updateExportBar();
+  }
+}
+$('export-run-html').onclick = () => {
+  const run = state.run;
+  if (!run) return;
+  window.open(`/api/v1/report?id=${encodeURIComponent(run.id)}&item=${state.runSel || 0}`, '_blank');
+};
+$('publish-run').onclick = publishRun;
 $('export-run-pdf').onclick = () => exportRun('pdf');
 $('export-run-csv').onclick = () => exportRun('csv');
 $('export-run-junit').onclick = () => exportRun('junit');

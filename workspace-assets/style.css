@@ -232,3 +232,5 @@ nav .suite-row button .rn:hover{opacity:1}
 .export-bar{display:flex;align-items:center;gap:6px;padding:8px 14px;border-bottom:1px solid var(--line-soft)}
 .export-label{font-size:11px;color:var(--text-dim);margin-right:2px}
 .export-bar .small{font-size:11px;padding:3px 10px}
+.published-link{font-size:11px;margin-left:4px;color:var(--accent, #2563eb);text-decoration:none}
+.published-link:hover{text-decoration:underline}
