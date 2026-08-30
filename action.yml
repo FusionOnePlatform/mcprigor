@@ -32,6 +32,14 @@ inputs:
     description: Include flaky-history warnings when history exists
     required: false
     default: "true"
+  artifact:
+    description: Upload the report, contract drift markdown, and per-suite results as a build artifact
+    required: false
+    default: "true"
+  artifact-name:
+    description: Name of the uploaded artifact
+    required: false
+    default: mcprigor-report
 outputs:
   status:
     description: passed or failed
@@ -39,6 +47,12 @@ outputs:
   report:
     description: Path to the generated Markdown report
     value: ${{ steps.rigor.outputs.report }}
+  drift-report:
+    description: Path to the standalone contract drift Markdown artifact (empty when no lock is given)
+    value: ${{ steps.rigor.outputs.drift-report }}
+  artifact-dir:
+    description: Directory containing the report, drift markdown, and per-suite JSON results
+    value: ${{ steps.rigor.outputs.artifact-dir }}
 runs:
   using: composite
   steps:
@@ -63,6 +77,13 @@ runs:
       if: always()
       shell: bash
       run: test -f "${{ steps.rigor.outputs.report }}" && cat "${{ steps.rigor.outputs.report }}" >> "$GITHUB_STEP_SUMMARY" || true
+    - name: Upload report artifact
+      if: always() && inputs.artifact == 'true' && steps.rigor.outputs.artifact-dir != ''
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ steps.rigor.outputs.artifact-dir }}
+        if-no-files-found: ignore
     - name: Post pull-request report
       if: always() && inputs.comment == 'true' && github.event_name == 'pull_request'
       shell: bash

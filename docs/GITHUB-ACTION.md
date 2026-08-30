@@ -41,8 +41,35 @@ The comment contains a suite table with pass/fail/skipped totals and durations, 
 | `version` | `latest` | MCP Rigor npm version installed for the run |
 | `comment` | `true` | Post/update a pull-request comment |
 | `flaky` | `true` | Add warnings when `.mcprigor/workspace-history.jsonl` exists |
+| `artifact` | `true` | Upload the report, drift markdown, and per-suite JSON as a build artifact |
+| `artifact-name` | `mcprigor-report` | Name of the uploaded artifact |
 
-Outputs are `status` (`passed` or `failed`) and `report` (the generated Markdown path).
+Outputs:
+
+- `status` — `passed` or `failed`;
+- `report` — path to the combined Markdown report;
+- `drift-report` — path to the standalone contract drift Markdown (empty without `lock`);
+- `artifact-dir` — directory containing the report, drift markdown, and per-suite JSON results.
+
+## Contract drift as a PR artifact
+
+When `lock` is set, the Action runs `mcprigor drift --markdown` and produces two things automatically:
+
+1. a **Contract drift** section inside the PR comment and job summary;
+2. a standalone `drift.md` artifact recording the suite, lock file, gate, gate result, and the full classified diff.
+
+The whole report directory is uploaded with `actions/upload-artifact` (disable with `artifact: false`), so reviewers can download the exact drift evidence for a merge decision, and compliance flows can retain it beyond comment history. Consume `drift-report` from a later step to post the drift anywhere else:
+
+```yaml
+- id: rigor
+  uses: FusionOnePlatform/mcprigor@v1
+  with:
+    suites: tests/**/*.mcpr
+    lock: mcp.lock.yaml
+- run: cat "${{ steps.rigor.outputs.drift-report }}"
+  if: steps.rigor.outputs.drift-report != ''
+```
+
 
 ## Fork safety
 
