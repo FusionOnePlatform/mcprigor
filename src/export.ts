@@ -1,5 +1,6 @@
 import { writeFile } from "node:fs/promises";
 import { deflateSync } from "node:zlib";
+import type { AuditResult } from "./audit.js";
 import type { RunResult } from "./types.js";
 import type { HistoryEntry } from "./workspace.js";
 
@@ -346,6 +347,53 @@ export function trendsPdf(entries: HistoryEntry[], scope?: string): Buffer {
     pdf.y -= 14;
   }
   return pdf.finish();
+}
+
+/** Designed security audit PDF: score/grade, severity cards, and finding detail. */
+export function auditPdf(result: AuditResult): Buffer {
+  const pdf = new Pdf(`MCP Rigor security audit — ${result.server.name ?? "MCP server"}`);
+  headerBand(pdf, "Security & permissions audit", `${result.server.name ?? "MCP server"} ${result.server.version ?? ""} — deterministic probe pack — ${result.startedAt}`);
+  statCards(pdf, [
+    { label: "Score", value: `${result.score}/100`, ink: result.score >= 90 ? GREEN : result.score >= 70 ? AMBER : RED },
+    { label: "Grade", value: result.grade, ink: result.grade === "A" ? GREEN : result.grade <= "C" ? RED : AMBER },
+    { label: "Passed", value: String(result.summary.passed), ink: GREEN },
+    { label: "Failed", value: String(result.summary.failed), ink: result.summary.failed ? RED : DIM },
+    { label: "Skipped", value: String(result.summary.skipped), ink: DIM },
+  ]);
+  pdf.text("SEVERITY", MARGIN, pdf.y - 10, 8.5, BRAND, true);
+  pdf.rule(pdf.y - 16, LINE); pdf.y -= 28;
+  const cards = [["Critical", result.summary.critical, RED], ["High", result.summary.high, RED], ["Medium", result.summary.medium, AMBER], ["Low", result.summary.low, PURPLE]] as const;
+  cards.forEach(([label, count, ink], index) => {
+    const x = MARGIN + index * 128;
+    pdf.pill(`${label.toUpperCase()} ${count}`, x, pdf.y - 5, 8, ink, count ? (ink === RED ? RED_SOFT : AMBER_SOFT) : ZEBRA);
+  });
+  pdf.y -= 32;
+  pdf.text("FINDINGS", MARGIN, pdf.y - 10, 8.5, BRAND, true);
+  pdf.rule(pdf.y - 16, LINE); pdf.y -= 26;
+  result.findings.forEach((finding, index) => {
+    const detail = wrapText(finding.message, 8.5, CONTENT_W - 84);
+    const evidence = finding.evidence ? wrapText(`Evidence: ${finding.evidence}`, 7.5, CONTENT_W - 84).slice(0, 3) : [];
+    const need = 27 + detail.length * 11 + evidence.length * 10;
+    pdf.ensure(need);
+    const top = pdf.y;
+    if (index % 2 === 0) pdf.rect(MARGIN - 6, top - need + 5, CONTENT_W + 12, need, ZEBRA, 5);
+    pdf.pill(finding.status.toUpperCase(), MARGIN, top - 13, 7, STATUS_INK[finding.status] ?? DIM, STATUS_BG[finding.status] ?? ZEBRA);
+    pdf.text(truncate(`${finding.id}  ${finding.title}`, 9.5, CONTENT_W - 88, true), MARGIN + 72, top - 13, 9.5, INK, true);
+    pdf.text(finding.severity.toUpperCase(), PAGE_W - MARGIN - 48, top - 13, 7.5, finding.severity === "critical" || finding.severity === "high" ? RED : finding.severity === "medium" ? AMBER : DIM, true);
+    let y = top - 29;
+    for (const line of detail) { pdf.text(line, MARGIN + 72, y, 8.5, DIM); y -= 11; }
+    for (const line of evidence) { pdf.text(line, MARGIN + 72, y, 7.5, FAINT); y -= 10; }
+    pdf.y = top - need - 2;
+  });
+  pdf.ensure(30); pdf.rule(pdf.y - 4, LINE);
+  pdf.text("Scoring: critical -35, high -20, medium -10, low -4. Skipped probes do not affect score.", MARGIN, pdf.y - 18, 7.5, FAINT);
+  return pdf.finish();
+}
+
+export function auditCsv(result: AuditResult): string {
+  const rows: Array<Array<unknown>> = [["server", "score", "grade", "id", "category", "status", "severity", "tool", "title", "message"]];
+  for (const item of result.findings) rows.push([result.server.name ?? "", result.score, result.grade, item.id, item.category, item.status, item.severity, item.tool ?? "", item.title, item.message]);
+  return csvRows(rows);
 }
 
 export async function writeRunCsv(result: RunResult, file: string): Promise<void> { await writeFile(file, runCsv(result), "utf8"); }

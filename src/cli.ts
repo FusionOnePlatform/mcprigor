@@ -54,6 +54,32 @@ async function main(): Promise<void> {
     return;
   }
 
+  if (command === "audit") {
+    const allFlags = file?.startsWith("--") ? [file, ...flags] : flags;
+    assertKnownFlags(allFlags, ["--command", "--url", "--allow-tool", "--timeout", "--json", "--pdf", "--csv", "--markdown", "--fail-on"]);
+    const targetFile = file && !file.startsWith("--") ? file : undefined;
+    let target: Suite["target"];
+    if (targetFile) target = (await loadTestFile(resolve(targetFile), compileOptions)).target;
+    else {
+      const commandOverride = flag(allFlags, "--command"); const urlOverride = flag(allFlags, "--url");
+      if (!!commandOverride === !!urlOverride) throw new UsageError("audit requires a suite file, or exactly one of --command / --url");
+      target = commandOverride ? commandTarget(commandOverride) : { transport: "streamable-http", url: urlOverride! };
+    }
+    const failOn = flag(allFlags, "--fail-on") ?? "high";
+    if (!["critical", "high", "medium", "low", "none"].includes(failOn)) throw new UsageError("audit --fail-on must be critical, high, medium, low, or none");
+    const { auditTarget, auditReport, auditMarkdown } = await import("./audit.js");
+    const result = await auditTarget(target, { allowTools: repeatedFlag(allFlags, "--allow-tool"), timeoutMs: numericFlag(allFlags, "--timeout") });
+    console.log(allFlags.includes("--markdown") ? auditMarkdown(result) : auditReport(result));
+    const { auditPdf, auditCsv } = await import("./export.js");
+    const jsonOut = flag(allFlags, "--json"); const pdfOut = flag(allFlags, "--pdf"); const csvOut = flag(allFlags, "--csv");
+    if (jsonOut) await writeFile(jsonOut, JSON.stringify(result, null, 2) + "\n", "utf8");
+    if (pdfOut) await writeFile(pdfOut, auditPdf(result));
+    if (csvOut) await writeFile(csvOut, auditCsv(result), "utf8");
+    const rank = { critical: 4, high: 3, medium: 2, low: 1, info: 0 } as const;
+    if (failOn !== "none" && result.findings.some((item) => item.status === "failed" && rank[item.severity] >= rank[failOn as keyof typeof rank])) process.exitCode = 1;
+    return;
+  }
+
   if (command === "record") {
     const out = flag([file ?? "", ...flags], "--out") ?? "recorded-tests.mcpr";
     const separator = process.argv.indexOf("--");
@@ -240,12 +266,15 @@ async function applyEnvironment(suite: { target: Suite["target"] }, requested?: 
   suite.target = picked.target;
   console.log(`Environment: ${picked.name} (${picked.target.transport === "stdio" ? [picked.target.command, ...(picked.target.args ?? [])].join(" ") : picked.target.url}) from mcprigor.config.yaml\n`);
 }
+function commandTarget(command: string): Extract<Suite["target"], { transport: "stdio" }> {
+  const [head, ...rest] = command.split(/\s+/).filter(Boolean);
+  if (!head) throw new UsageError("--command requires a non-empty server command");
+  return { transport: "stdio", command: head, args: rest };
+}
 function applyTargetOverride(suite: { target: Suite["target"] }, command?: string, url?: string): void {
   if (command && url) throw new UsageError("Use either --command or --url, not both");
   if (command) {
-    const [head, ...rest] = command.split(/\s+/).filter(Boolean);
-    if (!head) throw new UsageError("--command requires a non-empty server command");
-    suite.target = { transport: "stdio", command: head, args: rest };
+    suite.target = commandTarget(command);
     console.log(`Target override: running against command "${command}" instead of the suite's declared target.\n`);
   } else if (url) {
     suite.target = { transport: "streamable-http", url };
@@ -345,6 +374,9 @@ Start here:
                                       reviewable test draft from real traffic
   mcprigor author server.mcpr --out new-test.mcpr
                                       Guided no-code test creation
+  mcprigor audit server.mcpr --pdf audit.pdf --json audit.json
+                                      Deterministic security probe pack; tool
+                                      execution requires --allow-tool NAME
 
 Transport parity:
   mcprigor parity suite.mcpr [--markdown] [--out parity.md]
