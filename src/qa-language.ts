@@ -10,6 +10,7 @@ export function compileQaLanguage(source: string, file = "test.mcpr"): Suite {
   let target: Suite["target"] | undefined;
   const targets: Record<string, Suite["target"]> = {};
   let defaults: Suite["defaults"] | undefined;
+  const budgets: NonNullable<Suite["budgets"]> = [];
   let redact: string[] | undefined;
   let snapshots: Suite["snapshots"] | undefined;
   let client: Suite["client"] | undefined;
@@ -37,6 +38,11 @@ export function compileQaLanguage(source: string, file = "test.mcpr"): Suite {
       const selected = targets[match[1]!]; if (!selected) fail(file, lineNumber, `Unknown parity target “${match[1]}”. Declare it first.`);
       const block = readIndentedMap(lines, index, file); index = block.lastLine;
       Object.assign(selected, selected.transport === "stdio" ? { cwd: block.value.cwd, env: block.value.env } : { headers: block.value.headers, ...tokenFromOption(block.value as Record<string, unknown>) }); continue;
+    }
+    if ((match = line.match(/^Budget(?:\s+for\s+["']([^"']+)["'])?:\s*p(\d{1,3})\s+(\d+)\s*(ms|milliseconds?|s|seconds?)(?:\s+over\s+(\d+)\s+(?:calls|runs|samples))?$/i))) {
+      const maxMs = /^s/i.test(match[4]!) ? Number(match[3]) * 1000 : Number(match[3]);
+      budgets.push({ test: match[1] ?? "*", percentile: Number(match[2]), maxMs, ...(match[5] ? { window: Number(match[5]) } : {}) });
+      continue;
     }
     if ((match = line.match(/^Default timeout:\s*(\d+)\s*(ms|seconds?)$/i))) { defaults = { timeoutMs: match[2]!.toLowerCase().startsWith("s") ? Number(match[1]) * 1000 : Number(match[1]) }; continue; }
     if ((match = line.match(/^Redact:\s*(.+)$/i))) { redact = match[1]!.split(",").map((item) => unquote(item.trim())).filter(Boolean); continue; }
@@ -137,6 +143,7 @@ export function compileQaLanguage(source: string, file = "test.mcpr"): Suite {
       test.steps.push(step);
       continue;
     }
+    if ((match = line.match(/^(?:Expect|Then)(?: the)? call to finish within\s+(\d+)\s*(ms|milliseconds?|s|seconds?)$/i))) { const current = requireStep(step, file, lineNumber); const limit = /^s/i.test(match[2]!) ? Number(match[1]) * 1000 : Number(match[1]); current.assert = { ...(current.assert ?? {}), maxDurationMs: limit }; continue; }
     if (/^(?:Expect|Then)(?: it)? succeeds?$/i.test(line)) { requireStep(step, file, lineNumber).assert = { status: "success" }; continue; }
     if (/^(?:Expect|Then)(?: an)? error$/i.test(line)) { requireStep(step, file, lineNumber).assert = { status: "error" }; continue; }
     if ((match = line.match(/^Expect error code\s+(-?\d+)$/i))) { const current = requireStep(step, file, lineNumber); current.assert = { ...(current.assert ?? {}), status: "error", error: { ...(current.assert?.error ?? {}), code: Number(match[1]) } }; continue; }
@@ -178,7 +185,7 @@ export function compileQaLanguage(source: string, file = "test.mcpr"): Suite {
   if (!tests.length) throw new Error(`QA-LANG-001 ${file}: Add at least one 'Test: …'.`);
   for (const item of tests) if (!item.steps.length) throw new Error(`QA-LANG-001 ${file}: Test “${item.name}” has no actions.`);
   if (Object.keys(targets).length === 1) throw new Error(`QA-LANG-001 ${file}: Parity needs at least two 'Compare target' lines.`);
-  return { version: 1, name, target, ...(Object.keys(targets).length ? { targets } : {}), ...(defaults ? { defaults } : {}), ...(redact ? { redact } : {}), ...(snapshots ? { snapshots } : {}), ...(client ? { client } : {}), tests };
+  return { version: 1, name, target, ...(Object.keys(targets).length ? { targets } : {}), ...(defaults ? { defaults } : {}), ...(budgets.length ? { budgets } : {}), ...(redact ? { redact } : {}), ...(snapshots ? { snapshots } : {}), ...(client ? { client } : {}), tests };
 }
 
 function humanAssertion(path: string, verb: string, rest: string, file: string, line: number): JsonAssertion {

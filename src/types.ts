@@ -33,6 +33,20 @@ export interface StepAssertion {
   status?: "success" | "error";
   error?: { code?: number; message?: string; matches?: string };
   json?: JsonAssertion | JsonAssertion[];
+  /** Fail the step when the request takes longer than this many milliseconds. */
+  maxDurationMs?: number;
+}
+
+/** Suite-level latency budget checked against recorded run history after each run. */
+export interface PerfBudget {
+  /** Test name the budget applies to, or "*" for every test. */
+  test: string;
+  /** Percentile to measure, e.g. 95 for p95. */
+  percentile: number;
+  /** Budgeted duration in milliseconds. */
+  maxMs: number;
+  /** Number of recent recorded runs to measure over (default 20). */
+  window?: number;
 }
 
 export interface StepLifecycle { phase?: "setup" | "test" | "cleanup"; always?: boolean }
@@ -90,6 +104,7 @@ export interface Suite {
   name?: string;
   target: Target;
   targets?: Record<string, Target>;
+  budgets?: PerfBudget[];
   defaults?: { timeoutMs?: number };
   redact?: string[];
   extensions?: { functions?: string[]; permissions?: Array<"environment" | "filesystem-read" | "network">; allowlist?: string[]; unsafeLegacy?: boolean };
