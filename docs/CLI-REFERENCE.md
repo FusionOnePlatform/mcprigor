@@ -228,6 +228,26 @@ Outputs:
 
 Scoring deducts 35 for critical, 20 for high, 10 for medium, and 4 for low findings. Skipped probes do not affect the score and are shown with the exact opt-in needed.
 
+## Coverage gate
+
+```bash
+mcprigor coverage suite.mcpr --fail-under 80 --json coverage.json
+```
+
+Discovers the live MCP contract and reports untested tools, resources, resource templates, prompts, input properties, and enum/`oneOf`/`anyOf` branches. `--fail-under` accepts 0–100; `--markdown` produces a pull-request-friendly report. See [Coverage](COVERAGE.md).
+
+## Scheduled monitoring
+
+```bash
+mcprigor monitor prod.mcpr --every 15m --notify https://hooks.example/rigor
+```
+
+Runs an HTTP suite immediately and on a fixed interval, appends every result to trend history, and posts transition webhooks. `--notify-on` accepts `change` (default), `failure`, `recovery`, or `always`; `--max-runs` bounds cron/CI checks. See [Scheduled monitoring](MONITORING.md).
+
+## GitHub Action
+
+Use `FusionOnePlatform/mcprigor@v1` to run suites, contract drift, flaky warnings, job summaries, and an update-in-place pull-request comment. See [GitHub Action](GITHUB-ACTION.md).
+
 ## Latency budgets and regression gate
 
 ```bash

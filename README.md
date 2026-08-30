@@ -247,6 +247,9 @@ Performance and governance features on `main` (next npm release after 1.4.0):
 - [`Expect the call to finish within 800ms`, percentile budgets, and `--fail-on-regression`](docs/PERFORMANCE-GOVERNANCE.md)
 - [`mcprigor audit` deterministic security probes with scored PDF/CSV/JSON reports](docs/SECURITY-AUDIT.md)
 - [Multi-server test routing, collision checks, combined fleet locks, and composition drift](docs/MULTI-SERVER-COMPOSITIONS.md)
+- [GitHub Action with rich PR reports](docs/GITHUB-ACTION.md)
+- [Live MCP surface and schema coverage with `--fail-under`](docs/COVERAGE.md)
+- [Scheduled HTTP monitoring with failure/recovery webhooks](docs/MONITORING.md)
 
 See the [complete CLI reference](docs/CLI-REFERENCE.md).
 
