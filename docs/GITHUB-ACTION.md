@@ -1,6 +1,6 @@
 # GitHub Action and pull-request reports
 
-> Available on `main`; publish by pinning the next MCP Rigor release tag.
+> Available since `v1.5.0`; pin `@v1` for the latest 1.x or `@v1.5.0` for full reproducibility.
 
 The MCP Rigor Action runs deterministic suites, optionally gates contract drift, includes flaky-history warnings, writes a rich job summary, and creates or updates one pull-request comment.
 
