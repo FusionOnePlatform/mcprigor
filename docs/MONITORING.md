@@ -1,6 +1,6 @@
 # Scheduled production monitoring
 
-> Available on `main`; included in the next npm release after 1.4.0.
+> Available since `1.5.0`.
 
 Turn an HTTP MCP suite into a continuous production check:
 

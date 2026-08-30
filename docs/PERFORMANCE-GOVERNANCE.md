@@ -1,6 +1,6 @@
 # Performance governance
 
-> Available on `main`; included in the next npm release after 1.4.0.
+> Available since `1.5.0`.
 
 MCP Rigor turns MCP latency into a deterministic release gate. It supports immediate per-call limits, percentile budgets over recorded history, and automatic regression detection against each test's historical baseline.
 

@@ -1,6 +1,6 @@
 # Shareable hosted reports
 
-> Available on `main`; included in the next npm release after 1.4.0.
+> Available since `1.5.0`.
 
 Turn a test run into a URL anyone can open — no repository access, no CI login:
 

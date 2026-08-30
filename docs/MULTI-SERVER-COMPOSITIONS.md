@@ -1,6 +1,6 @@
 # Multi-server compositions
 
-> Available on `main`; included in the next npm release after 1.4.0.
+> Available since `1.5.0`.
 
 Real MCP clients mount several servers together. MCP Rigor compositions test each named server and govern the combined tool, resource, and prompt namespace as one fleet.
 
