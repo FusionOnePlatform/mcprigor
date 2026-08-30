@@ -1,6 +1,6 @@
 # Deterministic security audit
 
-> Available on `main`; included in the next npm release after 1.4.0.
+> Available since `1.5.0`.
 
 `mcprigor audit` runs a fixed security and permissions probe pack against an MCP server and produces an auditable score. No AI chooses payloads or interprets outcomes.
 

@@ -16,7 +16,7 @@
 
 MCP Rigor lets QA teams test MCP tools, resources, prompts, contracts, and transports without writing test code. Tests are deterministic: no AI model interprets the wording.
 
-> Status: `1.4.0` stable. Node.js 20 or 22 is required.
+> Status: `1.5.0` stable. Node.js 20 or 22 is required.
 
 ## Install
 
@@ -243,7 +243,7 @@ mcprigor contract-check LOCK --target FILE
 mcprigor evidence-show DIRECTORY
 ```
 
-Performance and governance features on `main` (next npm release after 1.4.0):
+Performance and governance features new in 1.5.0:
 
 - [`Expect the call to finish within 800ms`, percentile budgets, and `--fail-on-regression`](docs/PERFORMANCE-GOVERNANCE.md)
 - [`mcprigor audit` deterministic security probes with scored PDF/CSV/JSON reports](docs/SECURITY-AUDIT.md)

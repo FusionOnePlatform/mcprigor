@@ -1,6 +1,6 @@
 # MCP surface and schema coverage
 
-> Available on `main`; included in the next npm release after 1.4.0.
+> Available since `1.5.0`.
 
 `mcprigor coverage` answers which parts of a live MCP contract have no test evidence.
 

@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const out = join(root, "site-dist");
-const VERSION = "1.4.0";
+const VERSION = "1.5.0";
 const SITE = "https://mcprigor.com";
 
 // Per-page SEO descriptions (fallback: first paragraph of the doc).
@@ -335,14 +335,14 @@ const LANDING = `
   <div class="card"><h3>For QA</h3><p>Write tests that read like acceptance criteria in a local browser workspace with autocomplete, batch runs, run history, and pass-rate trends.</p></div>
   <div class="card"><h3>For AI agents</h3><p>Expose MCP Rigor as an <a href="./docs/mcp-server.html">MCP server</a> with <code>mcprigor serve</code> — coding agents write, validate, and run deterministic tests for the MCP servers they build.</p></div>
   <div class="card"><h3>For developers</h3><p>Contract locks with SHA-256 fingerprints, classified drift reports, sanitized traces, semantic snapshots, and stable error codes.</p></div>
-  <div class="card"><h3>Performance governance <span class="tag">Next release</span></h3><p>Fail slow calls immediately, enforce p50/p95 budgets over recorded history, and block latency regressions in CI without maintaining a separate baseline file. <a href="./docs/performance-governance.html">Performance guide →</a></p></div>
-  <div class="card"><h3>Deterministic security audit <span class="tag">Next release</span></h3><p>Probe malformed requests, spoofed tools, oversized payloads, path traversal, prompt injection, and secret exposure — then export a scored rich PDF. <a href="./docs/security-audit.html">Audit guide →</a></p></div>
-  <div class="card"><h3>Multi-server compositions <span class="tag">Next release</span></h3><p>Route scenarios across a mounted MCP fleet, detect tool/schema collisions, and gate combined contract drift with one stable composition lock. <a href="./docs/multi-server-compositions.html">Composition guide →</a></p></div>
-  <div class="card"><h3>GitHub Action <span class="tag">Next release</span></h3><p>Run suites and drift in CI, publish a rich job summary, and update one PR comment with pass tables, drift details, flaky warnings, and failures. <a href="./docs/github-action.html">Action guide →</a></p></div>
-  <div class="card"><h3>Coverage gate <span class="tag">Next release</span></h3><p>Find untested tools, prompts, resources, templates, properties, and enum/union branches; enforce <code>--fail-under 80</code>. <a href="./docs/coverage.html">Coverage guide →</a></p></div>
-  <div class="card"><h3>Production monitoring <span class="tag">Next release</span></h3><p>Schedule HTTP MCP tests, feed existing trends and performance baselines, and notify webhooks on failures and recoveries. <a href="./docs/monitoring.html">Monitoring guide →</a></p></div>
-  <div class="card"><h3>Session timeline <span class="tag">Next release</span></h3><p>Every HTML report embeds a clickable HAR-style timeline: one row per JSON-RPC call with durations, request params, and response bodies. <a href="./docs/evidence.html">Evidence guide →</a></p></div>
-  <div class="card"><h3>Shareable hosted reports <span class="tag">Next release</span></h3><p><code>mcprigor publish</code> turns a run into a static report URL on your own Netlify site — redacted first, gated by your hosting access. <a href="./docs/publishing.html">Publishing guide →</a></p></div>
+  <div class="card"><h3>Performance governance</h3><p>Fail slow calls immediately, enforce p50/p95 budgets over recorded history, and block latency regressions in CI without maintaining a separate baseline file. <a href="./docs/performance-governance.html">Performance guide →</a></p></div>
+  <div class="card"><h3>Deterministic security audit</h3><p>Probe malformed requests, spoofed tools, oversized payloads, path traversal, prompt injection, and secret exposure — then export a scored rich PDF. <a href="./docs/security-audit.html">Audit guide →</a></p></div>
+  <div class="card"><h3>Multi-server compositions</h3><p>Route scenarios across a mounted MCP fleet, detect tool/schema collisions, and gate combined contract drift with one stable composition lock. <a href="./docs/multi-server-compositions.html">Composition guide →</a></p></div>
+  <div class="card"><h3>GitHub Action</h3><p>Run suites and drift in CI, publish a rich job summary, and update one PR comment with pass tables, drift details, flaky warnings, and failures. <a href="./docs/github-action.html">Action guide →</a></p></div>
+  <div class="card"><h3>Coverage gate</h3><p>Find untested tools, prompts, resources, templates, properties, and enum/union branches; enforce <code>--fail-under 80</code>. <a href="./docs/coverage.html">Coverage guide →</a></p></div>
+  <div class="card"><h3>Production monitoring</h3><p>Schedule HTTP MCP tests, feed existing trends and performance baselines, and notify webhooks on failures and recoveries. <a href="./docs/monitoring.html">Monitoring guide →</a></p></div>
+  <div class="card"><h3>Session timeline</h3><p>Every HTML report embeds a clickable HAR-style timeline: one row per JSON-RPC call with durations, request params, and response bodies. <a href="./docs/evidence.html">Evidence guide →</a></p></div>
+  <div class="card"><h3>Shareable hosted reports</h3><p><code>mcprigor publish</code> turns a run into a static report URL on your own Netlify site — redacted first, gated by your hosting access. <a href="./docs/publishing.html">Publishing guide →</a></p></div>
   <div class="card"><h3>For product owners</h3><p>Readable tests double as living acceptance criteria, and evidence bundles prove what was tested, against which server, and when.</p></div>
   <div class="card"><h3>Transport parity</h3><p>Run the same scenario against a local stdio server and a deployed Streamable HTTP endpoint and see exactly where behavior differs.</p></div>
   <div class="card"><h3>Data-driven</h3><p>Tables, CSV, JSON, YAML, Excel, REST, and Google Sheets — with typed columns, filters, joins, and seeded sampling.</p></div>
