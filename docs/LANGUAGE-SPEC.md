@@ -64,6 +64,33 @@ Server options:
     Authorization: "Bearer ${env.QA_TOKEN}"
 ```
 
+### Environment variables and secrets
+
+Any string value in a target block — a header, a URL, a `cwd`, an `env` entry, a `Server options` field — may contain `${env.NAME}` placeholders. Before the suite connects, each placeholder is replaced with the value of the operating-system environment variable `NAME`:
+
+```text
+MCP URL: ${env.MCP_URL}
+
+Server options:
+  headers:
+    Authorization: "Bearer ${env.MCP_TOKEN}"
+    X-Api-Key: "${env.API_KEY}"
+```
+
+```bash
+MCP_URL=https://qa.example.com/mcp MCP_TOKEN=... API_KEY=... mcprigor test suite.mcpr
+```
+
+Rules:
+
+- The syntax is exactly `${env.NAME}`. `NAME` is a literal environment-variable name; there is no shell, no command substitution, and no default-value syntax.
+- A placeholder may be embedded in a larger string (`"Bearer ${env.MCP_TOKEN}"`) or be the whole value (`"${env.API_KEY}"`), and a value may contain several placeholders.
+- If `NAME` is not set, the run stops immediately with `Environment variable not found: NAME` — it never sends an empty header or a half-substituted URL.
+- Never write a literal secret into a suite. Keep tokens and keys in the environment (locally) or in CI secrets, and reference them with `${env.NAME}` so the committed `.mcpr` file carries no credentials.
+- Header values are registered with the redactor automatically, so a resolved token never appears in reports, evidence bundles, or published URLs.
+
+The same `${env.NAME}` placeholders work in every target surface: single-server `Server options`, per-server `Server options for "name"` in compositions, and `Target options for "name"` in parity comparisons.
+
 Multi-server compositions use named server declarations and per-test routing:
 
 ```text

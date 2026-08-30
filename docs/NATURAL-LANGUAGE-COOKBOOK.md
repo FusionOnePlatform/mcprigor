@@ -187,7 +187,7 @@ Run with `mcprigor parity FILE`.
 
 ## Test a server that needs a bearer token
 
-Point the suite at the deployed endpoint and pass the token through an environment variable. Never paste a real token into a test file.
+Point the suite at the deployed endpoint and pass the token through an environment variable. The `${env.NAME}` placeholder is replaced with the value of the `NAME` environment variable before the suite connects, so no real token ever lives in the test file.
 
 ```text
 MCP Test 1
@@ -208,6 +208,15 @@ Run it with the token in the environment:
 
 ```bash
 QA_TOKEN=... mcprigor test orders.mcpr
+```
+
+The placeholder can sit inside a larger string (`"Bearer ${env.QA_TOKEN}"`) or be the whole value, and any header works the same way — API keys, custom tenant headers, and so on:
+
+```text
+Server options:
+  headers:
+    X-Api-Key: "${env.API_KEY}"
+    X-Tenant: "acme"
 ```
 
 Three guarantees come with this pattern:

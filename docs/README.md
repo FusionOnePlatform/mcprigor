@@ -13,6 +13,7 @@ Choose the path that matches your role.
 ## Test and platform engineers
 
 - [Engineer setup](ENGINEER-SETUP.md) — targets, credentials, project layout, and CI.
+- [Authentication and secrets](AUTHENTICATION.md) — test protected servers with bearer tokens, API keys, OAuth, and `${env.NAME}` placeholders.
 - [CLI reference](CLI-REFERENCE.md) — commands, options, outputs, and exit codes.
 - [Language reference](LANGUAGE-SPEC.md) — complete deterministic `.mcpr` syntax, in enforced parity with YAML via `mcprigor convert`.
 - [State and dependencies](STATE-AND-DEPENDENCIES.md) — share outputs across tests and runs.
