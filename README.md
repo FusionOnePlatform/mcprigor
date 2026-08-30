@@ -15,7 +15,7 @@
 
 MCP Rigor lets QA teams test MCP tools, resources, prompts, contracts, and transports without writing test code. Tests are deterministic: no AI model interprets the wording.
 
-> Status: `1.3.1` stable. Node.js 20 or 22 is required.
+> Status: `1.4.0` stable. Node.js 20 or 22 is required.
 
 ## Install
 
