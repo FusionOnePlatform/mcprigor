@@ -24,11 +24,26 @@ for (const suite of suites) {
 if (!suites.length) { failed = true; rows.push({ suite: "(no suites matched)", code: 2, status: "failed", output: "Check the action's suites input." }); }
 
 let drift;
+let driftPath = "";
 if (process.env.INPUT_LOCK) {
   const suite = suites[0];
   if (!suite) drift = { code: 2, output: "No suite available for drift." };
   else drift = await rigor(["drift", suite, "--against", process.env.INPUT_LOCK, "--fail-on", process.env.INPUT_FAIL_ON || "breaking", "--markdown", "--github-annotations"]);
   if (drift.code !== 0) failed = true;
+  driftPath = join(outDir, "drift.md");
+  const driftBody = [
+    "<!-- mcprigor-drift-report -->",
+    "# MCP Rigor contract drift",
+    "",
+    `- Suite: \`${suites[0] || "(none)"}\``,
+    `- Lock: \`${process.env.INPUT_LOCK}\``,
+    `- Gate: \`${process.env.INPUT_FAIL_ON || "breaking"}\``,
+    `- Result: ${drift.code === 0 ? "✅ within gate" : "❌ gate failed"}`,
+    "",
+    drift.output.trim() || (drift.code === 0 ? "No contract drift detected." : "Drift command failed."),
+    "",
+  ].join("\n");
+  await writeFile(driftPath, driftBody, "utf8");
 }
 
 let flaky;
@@ -60,6 +75,8 @@ const body = [
 await writeFile(reportPath, body, "utf8");
 await output("status", failed ? "failed" : "passed");
 await output("report", reportPath);
+await output("drift-report", driftPath);
+await output("artifact-dir", outDir);
 if (failed) process.exitCode = 1;
 
 async function rigor(args) {
