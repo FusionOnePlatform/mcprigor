@@ -139,6 +139,40 @@ mcprigor record --out draft.mcpr -- node dist/server.js
 
 Proxies a live MCP stdio session: your client (an agent, MCP Inspector's CLI mode, or any harness) talks to `mcprigor record` on stdin/stdout, and Rigor forwards everything to the real server while logging each `tools/call` exchange. When the session ends it writes a reviewable `.mcpr` draft — one test per call, with deterministic assertions picked from the actual responses (up to three scalar `structuredContent` leaves, falling back to short text content). No AI: the draft is a literal transcription. Review it, prune it, and run it.
 
+## Multi-server compositions
+
+Model the MCP fleet an agent mounts together without overloading parity environments:
+
+```text
+MCP Test 1
+Suite: "Checkout fleet"
+Named server "catalog": node services/catalog.js
+Named server "billing": https://qa.example.com/billing/mcp
+
+Test: "catalog lookup"
+  On server "catalog"
+  Call tool "search" with:
+    query: "widget"
+
+Test: "billing health"
+  On server "billing"
+  Send "ping"
+```
+
+The YAML/JSON equivalent uses a top-level `servers` mapping and `server` on each test. The legacy `target` remains the default and existing suites are unchanged.
+
+Composition governance:
+
+```bash
+mcprigor composition-check fleet.mcpr
+mcprigor composition-discover fleet.mcpr --out mcp.composition.lock.yaml
+mcprigor composition-drift fleet.mcpr --against mcp.composition.lock.yaml --fail-on breaking
+```
+
+The combined lock embeds each server's standard discovery contract, plus cross-server issues and a stable fleet fingerprint. Checks detect duplicate tool names, conflicting tool schemas, duplicate resource URIs/templates, duplicate prompts, server additions/removals, and per-server contract drift.
+
+`composition-drift --fail-on` supports `breaking` (default), `potentially-breaking`, `any`, and `none`, matching the single-server drift gate.
+
 ## Project environments
 
 Define shared targets once in `mcprigor.config.yaml` (found in the working directory or any parent):

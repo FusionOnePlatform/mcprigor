@@ -154,6 +154,31 @@ async function main(): Promise<void> {
     else if (diff.status === "changed") console.log(`\nDrift detected but within the allowed gate (--fail-on ${failOn}).`);
     process.exitCode = gate ? 1 : 0; return;
   }
+  if (command === "composition-check") {
+    const suite = await loadTestFile(resolve(file), compileOptions);
+    if (!suite.servers) throw new UsageError("composition-check requires at least two Named server declarations (or a YAML servers mapping)");
+    const { discoverComposition, compositionReport } = await import("./composition.js");
+    const lock = await discoverComposition(suite.servers); console.log(compositionReport(lock));
+    process.exitCode = lock.issues.some((issue) => issue.severity === "breaking") ? 1 : 0; return;
+  }
+  if (command === "composition-discover") {
+    const suite = await loadTestFile(resolve(file), compileOptions);
+    if (!suite.servers) throw new UsageError("composition-discover requires at least two Named server declarations (or a YAML servers mapping)");
+    const { discoverComposition, compositionReport, writeCompositionLock } = await import("./composition.js");
+    const lock = await discoverComposition(suite.servers); const out = flag(flags, "--out") ?? "mcp.composition.lock.yaml";
+    await writeCompositionLock(lock, out); console.log(compositionReport(lock)); console.log(`Saved combined fleet contract to ${out}`); return;
+  }
+  if (command === "composition-drift") {
+    const suite = await loadTestFile(resolve(file), compileOptions);
+    if (!suite.servers) throw new UsageError("composition-drift requires at least two Named server declarations (or a YAML servers mapping)");
+    const against = requiredFlag(flags, "--against"); const failOn = flag(flags, "--fail-on") ?? "breaking";
+    if (!["breaking", "potentially-breaking", "any", "none"].includes(failOn)) throw new UsageError("composition-drift --fail-on must be breaking, potentially-breaking, any, or none");
+    const { discoverComposition, readCompositionLock, compareCompositions, compositionDriftReport } = await import("./composition.js");
+    const diff = compareCompositions(await readCompositionLock(resolve(against)), await discoverComposition(suite.servers));
+    console.log(compositionDriftReport(diff)); const jsonOut = flag(flags, "--json"); if (jsonOut) await writeFile(jsonOut, JSON.stringify(diff, null, 2) + "\n", "utf8");
+    const gate = failOn === "none" ? false : failOn === "any" ? diff.status === "changed" : failOn === "potentially-breaking" ? diff.breaking + diff.potentiallyBreaking > 0 : diff.breaking > 0;
+    process.exitCode = gate ? 1 : 0; return;
+  }
   if (command === "contract-check") {
     const suite = await loadTestFile(resolve(requiredFlag(flags, "--target")), compileOptions);
     const checked = await checkContract(resolve(file), suite.target);
@@ -377,6 +402,13 @@ Start here:
   mcprigor audit server.mcpr --pdf audit.pdf --json audit.json
                                       Deterministic security probe pack; tool
                                       execution requires --allow-tool NAME
+
+Multi-server compositions:
+  mcprigor composition-check fleet.mcpr
+  mcprigor composition-discover fleet.mcpr [--out mcp.composition.lock.yaml]
+  mcprigor composition-drift fleet.mcpr --against mcp.composition.lock.yaml
+  In .mcpr: Named server "catalog": node catalog.js
+            On server "catalog"
 
 Transport parity:
   mcprigor parity suite.mcpr [--markdown] [--out parity.md]

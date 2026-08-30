@@ -12,11 +12,11 @@
       "name": "keyword.control.version.mcpr"
     },
     {
-      "match": "^\\s*(Suite|Server|Server options|MCP URL|Compare target|Target options for|Default timeout|Redact|Snapshots|Ignore snapshot paths|Client behavior|Import flows from|Flow|Inputs|Outputs|Test|Scenario|Id|Depends on|Require|Require protocol|Variables|Skip|Setup|Steps|Cleanup|Data source):?",
+      "match": "^\\s*(Suite|Server|Named server|Server options|Server options for|MCP URL|Compare target|Target options for|Default timeout|Budget|Redact|Snapshots|Ignore snapshot paths|Client behavior|Import flows from|Flow|Inputs|Outputs|Test|Scenario|Id|Depends on|Require|Require protocol|Variables|Skip|Setup|Steps|Cleanup|Data source):?",
       "name": "keyword.control.mcpr"
     },
     {
-      "match": "^\\s*(Call tool|When the server asks for input|When the server requests sampling|Read resource|Get prompt|Send|Expect|Save|Export|Set|Use flow|For each row|Wait up to|Wait for notification|Subscribe to resource|Unsubscribe from resource|Set log level|List all|Get task|List tasks|Cancel task|From CSV|From JSON|From YAML|From Excel|From REST|Column|Derive|Keep rows where|Sample|Cache this source)\\b",
+      "match": "^\\s*(Call tool|On server|When the server asks for input|When the server requests sampling|Read resource|Get prompt|Send|Expect|Save|Export|Set|Use flow|For each row|Wait up to|Wait for notification|Subscribe to resource|Unsubscribe from resource|Set log level|List all|Get task|List tasks|Cancel task|From CSV|From JSON|From YAML|From Excel|From REST|Column|Derive|Keep rows where|Sample|Cache this source)\\b",
       "name": "keyword.other.mcpr"
     },
     {

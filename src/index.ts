@@ -3,6 +3,7 @@ export { authorTest, createReadlinePromptAdapter, flattenResponse, renderAuthore
 export { canonicalize, canonicalJson, fingerprint } from "./canonical.js";
 export { checkContract, compareContracts, contractMarkdown, contractReport, readContract, updateContract, type ContractChange, type ContractDiff, type DriftSeverity } from "./contract.js";
 export { discoverTarget, generateSuite, writeGeneratedSuite, writeLock } from "./discovery.js";
+export { compareCompositions, compositionDriftReport, compositionIssues, compositionReport, discoverComposition, readCompositionLock, updateCompositionLock, writeCompositionLock, type CompositionDrift, type CompositionIssue, type CompositionLock } from "./composition.js";
 export { clearDataCache, loadData, type DataProvider, type DataRow, type DataSet } from "./data.js";
 export { builtinNames, callUtility, createFunctionRegistry, type UtilityFunction } from "./extensions.js";
 export { resolveFlowImports, type ImportGraph } from "./imports.js";
