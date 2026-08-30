@@ -165,6 +165,35 @@ mcprigor drift suite.mcpr --against mcp.lock.yaml --env prod
 
 The selected environment replaces the suite's declared target and is announced in the output. With a `default:` set, plain `mcprigor test suite.mcpr` uses it automatically. `--command`/`--url` overrides still win over the environment when both are given. An environment value can be a command string, a URL string, or a mapping with `server`/`cwd`/`env` (stdio) or `url`/`headers`/`token from` (HTTP).
 
+## Deterministic security audit
+
+Run the built-in security and permissions probe pack against a suite target:
+
+```bash
+mcprigor audit suite.mcpr --pdf security-audit.pdf --json security-audit.json
+mcprigor audit --url https://qa.example.com/mcp --fail-on high
+```
+
+The default, non-destructive pack probes malformed JSON-RPC parameters, unknown/tool-name spoofing, oversized payloads, and path-traversal resource URIs. It also inventories every advertised tool for prompt-injection and secret-canary testing.
+
+Tool calls are never guessed or executed by default. Explicitly allow only reviewed, non-destructive tools:
+
+```bash
+mcprigor audit suite.mcpr --allow-tool search --allow-tool summarize
+```
+
+Allowed tools receive a fixed prompt-injection string containing a deterministic canary. MCP Rigor checks whether the tool followed/reflected the payload or exposed the canary. The canary is redacted from report evidence.
+
+Outputs:
+
+- terminal or `--markdown`
+- `--json audit.json`
+- `--csv audit.csv`
+- `--pdf audit.pdf` — rich scorecard with grade, severity cards, and finding detail
+- `--fail-on critical|high|medium|low|none` (default: `high`)
+
+Scoring deducts 35 for critical, 20 for high, 10 for medium, and 4 for low findings. Skipped probes do not affect the score and are shown with the exact opt-in needed.
+
 ## Latency budgets and regression gate
 
 ```bash
