@@ -16,7 +16,7 @@ Or with an explicit root:
 mcprigor serve path/to/project
 ```
 
-The server speaks MCP over stdio. Typical client configuration:
+The server speaks MCP over stdio (`mcp` is an alias for `serve`). Typical client configuration:
 
 ```json
 {

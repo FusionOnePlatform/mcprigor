@@ -19,7 +19,7 @@ Creates an editable plain-language example. Existing files are protected unless 
 mcprigor author server.mcpr --out tests/customer.mcpr
 ```
 
-Connects to the target in `server.mcpr` and guides you through creating a test.
+Connects to the target in `server.mcpr` and guides you through creating a test. Alias: `create`.
 
 ## Validate and run
 
@@ -90,6 +90,15 @@ mcprigor workspace ./acceptance-tests --port 4173
 ```
 
 Starts a loopback-only QA interface. Alias: `web`.
+
+## MCP server for agents
+
+```bash
+mcprigor serve
+mcprigor serve path/to/project
+```
+
+Exposes MCP Rigor itself as an MCP server over stdio so coding agents can write, validate, and run suites. Alias: `mcp`. See the [MCP server guide](MCP-SERVER.md).
 
 ## Transport parity
 
