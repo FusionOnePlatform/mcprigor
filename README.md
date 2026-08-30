@@ -233,10 +233,20 @@ mcprigor check FILE                   Validate without connecting
 mcprigor test FILE                    Run natural-language or YAML tests
 mcprigor author TARGET --out FILE     Build a test interactively
 mcprigor parity FILE                  Compare named targets
+mcprigor audit FILE                   Run deterministic security probes
+mcprigor composition-check FILE       Check a mounted server fleet
+mcprigor composition-discover FILE    Save a combined fleet contract
+mcprigor composition-drift FILE       Gate fleet contract drift
 mcprigor discover FILE                Save the live MCP contract
 mcprigor contract-check LOCK --target FILE
 mcprigor evidence-show DIRECTORY
 ```
+
+Performance and governance features on `main` (next npm release after 1.4.0):
+
+- [`Expect the call to finish within 800ms`, percentile budgets, and `--fail-on-regression`](docs/PERFORMANCE-GOVERNANCE.md)
+- [`mcprigor audit` deterministic security probes with scored PDF/CSV/JSON reports](docs/SECURITY-AUDIT.md)
+- [Multi-server test routing, collision checks, combined fleet locks, and composition drift](docs/MULTI-SERVER-COMPOSITIONS.md)
 
 See the [complete CLI reference](docs/CLI-REFERENCE.md).
 

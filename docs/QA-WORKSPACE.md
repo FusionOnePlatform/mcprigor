@@ -30,7 +30,7 @@ An empty folder shows a three-step welcome screen. Choose **＋ New test file** 
 2. Edit the plain-language scenario. The editor provides syntax highlighting, line numbers, and autocomplete: top-level declarations at the start of a line, actions and assertions when indented, and comparison phrases after `Expect "field"`. Accept with `Tab` or `Enter`; force the list open with `Ctrl+Space`.
 3. Choose **Validate** (`Ctrl/⌘+S` saves, `Ctrl/⌘+Enter` runs). A wording problem highlights the offending line and moves the cursor to it.
 4. Choose **▶ Run tests** or **Parity**.
-5. Review the results panel: per-file pass/fail with durations; select a file for its full report.
+5. Review the results panel: per-file pass/fail with durations; select a file for its full report. Drag either panel divider to resize the file list, editor, and results areas; widths persist across reloads, arrow keys resize a focused divider, and double-click resets the layout.
 
 The editor marks unsaved changes; running or validating saves them first. If the file changed elsewhere after you opened it, the workspace refuses to overwrite it and asks you to reload.
 
@@ -51,6 +51,8 @@ Test runs are recorded in `.mcprigor/workspace-history.jsonl` (most recent 2000 
 - **Trends** — per-suite pass rate, a duration sparkline over the last 30 runs, and per-test pass-rate bars that make flaky or consistently failing tests stand out.
 
 One search box filters all three tabs. It matches suite names, test names, and error text, and highlights matches, so you can answer questions like "when did `delivered` start failing?" without leaving the browser.
+
+Completed runs expose **PDF**, **CSV**, and **JUnit XML** downloads. The Trends tab exports a rich trends PDF, aggregate CSV, or raw history CSV. PDF reports include summary cards, pass-rate visuals, per-test detail, failures, durations, and evidence identifiers.
 
 ## What is available
 

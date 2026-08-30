@@ -18,6 +18,8 @@ Choose the path that matches your role.
 - [State and dependencies](STATE-AND-DEPENDENCIES.md) — share outputs across tests and runs.
 - [Data engineering](DATA-ENGINEERING.md) — types, filters, joins, samples, and caches.
 - [Transport parity](TRANSPORT-PARITY.md) — compare stdio and Streamable HTTP.
+- [Performance governance](PERFORMANCE-GOVERNANCE.md) — call limits, percentile budgets, and regression gates.
+- [Multi-server compositions](MULTI-SERVER-COMPOSITIONS.md) — route tests across a fleet and gate combined drift.
 
 ## Contracts and evidence
 
@@ -30,6 +32,7 @@ Choose the path that matches your role.
 
 - [Extension SDK](EXTENSION-SDK.md)
 - [Stable error model](ERROR-MODEL.md)
+- [Deterministic security audit](SECURITY-AUDIT.md) — built-in probe pack, severity gate, and rich reports.
 - [Security and retention](SECURITY-AND-RETENTION.md)
 - [Compatibility policy](COMPATIBILITY.md)
 

@@ -25,6 +25,9 @@ const DESCRIPTIONS = {
   "data-engineering": "Advanced MCP Rigor test data: typed columns, filters, joins, derived values, seeded sampling, and caching.",
   "state-and-dependencies": "Share outputs between MCP Rigor tests and runs with dependencies, exports, and persisted state.",
   "transport-parity": "Compare MCP server behavior across stdio and Streamable HTTP transports and detect semantic differences automatically.",
+  "performance-governance": "Set deterministic MCP latency assertions, percentile performance budgets, and CI regression gates backed by recorded history.",
+  "multi-server-compositions": "Test multiple MCP servers as one mounted fleet, detect tool and schema collisions, and gate combined contract drift in CI.",
+  "security-audit": "Run deterministic MCP security probes for malformed requests, spoofing, oversized payloads, traversal, prompt injection, and secret exposure with scored reports.",
   "contract-drift": "Lock an MCP server's contract with SHA-256 fingerprints and detect breaking, potentially breaking, and non-breaking drift in CI.",
   "evidence": "MCP Rigor evidence bundles: sanitized traces, negotiated metadata, and content fingerprints proving what was tested and when.",
   "snapshots-and-replay": "Semantic snapshots with path-level diffs and safe trace replay for MCP server responses.",
@@ -44,6 +47,9 @@ const FAQ = [
   ["What is the .mcpr file extension?", "MCP Rigor natural-language tests use the .mcpr extension — short for MCP Rigor. A .mcpr file contains readable test scenarios that compile deterministically to the same runtime model as YAML."],
   ["Is MCP Rigor free?", "Yes. MCP Rigor is open source under the Apache-2.0 license, funded and supported by LoopIQ, the AI-Native governance platform for software releases."],
   ["Who is MCP Rigor for?", "QA engineers who want natural-language MCP tests, developers who need contract drift detection and debugging evidence, and product owners who want readable acceptance criteria with auditable proof."],
+  ["Can MCP Rigor enforce MCP performance budgets?", "Yes. Tests can set per-call latency limits, suite-level percentile budgets such as p95 over 20 calls, and a CI regression gate that compares current latency with recorded history."],
+  ["Can MCP Rigor audit MCP server security?", "Yes. The deterministic audit pack probes malformed requests, tool-name spoofing, oversized payloads, resource path traversal, prompt injection, and secret-canary exposure. Tool execution requires an explicit allowlist."],
+  ["Can MCP Rigor test multiple MCP servers together?", "Yes. Named-server compositions route tests to individual servers, detect tool and schema collisions across the mounted fleet, and create combined contract locks for fleet drift gates."],
 ];
 
 const NAV = [
@@ -64,6 +70,8 @@ const NAV = [
     ["DATA-ENGINEERING", "Data engineering"],
     ["STATE-AND-DEPENDENCIES", "State & dependencies"],
     ["TRANSPORT-PARITY", "Transport parity"],
+    ["PERFORMANCE-GOVERNANCE", "Performance governance"],
+    ["MULTI-SERVER-COMPOSITIONS", "Multi-server compositions"],
   ]},
   { section: "Contracts & evidence", pages: [
     ["CONTRACT-DRIFT", "Contract drift"],
@@ -74,6 +82,7 @@ const NAV = [
   { section: "Operations", pages: [
     ["EXTENSION-SDK", "Extension SDK"],
     ["ERROR-MODEL", "Error model"],
+    ["SECURITY-AUDIT", "Deterministic security audit"],
     ["SECURITY-AND-RETENTION", "Security & retention"],
     ["COMPATIBILITY", "Compatibility"],
   ]},
@@ -313,6 +322,9 @@ const LANDING = `
   <div class="card"><h3>For QA</h3><p>Write tests that read like acceptance criteria in a local browser workspace with autocomplete, batch runs, run history, and pass-rate trends.</p></div>
   <div class="card"><h3>For AI agents</h3><p>Expose MCP Rigor as an <a href="./docs/mcp-server.html">MCP server</a> with <code>mcprigor serve</code> — coding agents write, validate, and run deterministic tests for the MCP servers they build.</p></div>
   <div class="card"><h3>For developers</h3><p>Contract locks with SHA-256 fingerprints, classified drift reports, sanitized traces, semantic snapshots, and stable error codes.</p></div>
+  <div class="card"><h3>Performance governance <span class="tag">Next release</span></h3><p>Fail slow calls immediately, enforce p50/p95 budgets over recorded history, and block latency regressions in CI without maintaining a separate baseline file. <a href="./docs/performance-governance.html">Performance guide →</a></p></div>
+  <div class="card"><h3>Deterministic security audit <span class="tag">Next release</span></h3><p>Probe malformed requests, spoofed tools, oversized payloads, path traversal, prompt injection, and secret exposure — then export a scored rich PDF. <a href="./docs/security-audit.html">Audit guide →</a></p></div>
+  <div class="card"><h3>Multi-server compositions <span class="tag">Next release</span></h3><p>Route scenarios across a mounted MCP fleet, detect tool/schema collisions, and gate combined contract drift with one stable composition lock. <a href="./docs/multi-server-compositions.html">Composition guide →</a></p></div>
   <div class="card"><h3>For product owners</h3><p>Readable tests double as living acceptance criteria, and evidence bundles prove what was tested, against which server, and when.</p></div>
   <div class="card"><h3>Transport parity</h3><p>Run the same scenario against a local stdio server and a deployed Streamable HTTP endpoint and see exactly where behavior differs.</p></div>
   <div class="card"><h3>Data-driven</h3><p>Tables, CSV, JSON, YAML, Excel, REST, and Google Sheets — with typed columns, filters, joins, and seeded sampling.</p></div>
@@ -361,7 +373,7 @@ async function build() {
   };
   await writeFile(join(out, "index.html"), layout({
     title: "MCP Rigor — Natural-Language Testing for MCP Servers | Funded by LoopIQ",
-    description: "Open-source, deterministic testing for Model Context Protocol servers. QA teams write natural-language tests; developers get contract drift detection, evidence, and transport parity. Funded by LoopIQ.",
+    description: "Open-source deterministic MCP testing with natural-language tests, performance budgets, security audits, multi-server fleet drift, evidence, and transport parity. Funded by LoopIQ.",
     content: LANDING, extraLd: [faqLd, siteLd],
   }));
 
@@ -420,8 +432,11 @@ ${NAV.flatMap(({ section, pages }) => pages.map(([doc, label]) => `- [${label}](
 - Natural-language tests compile deterministically; the same sentence always produces the same test.
 - Test files use the .mcpr extension (not .mcp, which conflicts with other software).
 - Transports: local stdio subprocess and deployed Streamable HTTP.
-- CLI: init, check, test, author, parity, workspace, serve (MCP server for AI agents), discover, generate, contract-check, contract-diff, contract-update, evidence-show, evidence-compare, snapshot-diff, replay.
-- Safety: remote data and custom extensions are opt-in; reports are sanitized and secrets redacted.
+- CLI: init, check, test, author, parity, workspace, serve, audit, trends, composition-check, composition-discover, composition-drift, discover, generate, contract-check, contract-diff, contract-update, evidence-show, evidence-compare, snapshot-diff, replay.
+- Performance governance: per-call latency assertions, percentile budgets over history, and --fail-on-regression CI gating.
+- Deterministic security audit: malformed requests, spoofing, oversized payloads, path traversal, prompt injection, and secret-canary exposure; tool execution requires exact --allow-tool opt-in.
+- Multi-server compositions: per-test named-server routing, cross-server tool/schema/resource/prompt collision detection, stable combined locks, and fleet drift.
+- Safety: remote data, custom extensions, and audit tool calls are opt-in; reports are sanitized and secrets redacted.
 - Browser QA workspace (mcprigor workspace): create/rename/edit suites with syntax highlighting and autocomplete, batch-run up to 20 suites, persistent run history with pass-rate trends and full-text search.
 - Complements MCP Inspector and official MCP Conformance; not a certification program.
 `);
