@@ -12,7 +12,7 @@
 
 [![MCP Rigor showcase: visual QA workspace, MCP server for AI agents, and CLI/CI](.github/assets/demo.gif)](https://mcprigor.com/assets/showcase-demo.mp4)
 
-<sub>Visual QA workspace · MCP server for AI agents · CLI and CI — [watch the MP4](https://mcprigor.com/assets/showcase-demo.mp4)</sub>
+<sub>Visual QA workspace · English ⇄ YAML parity · interactive evidence timeline · CLI, CI, and shareable reports — [watch the MP4](https://mcprigor.com/assets/showcase-demo.mp4)</sub>
 
 MCP Rigor lets QA teams test MCP tools, resources, prompts, contracts, and transports without writing test code. Tests are deterministic: no AI model interprets the wording.
 

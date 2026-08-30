@@ -7,7 +7,7 @@ To re-record (e.g. after output format changes):
 ```bash
 mkdir -p /tmp/mcprigor-demo && cd /tmp/mcprigor-demo
 npm init -y && npm install mcprigor @modelcontextprotocol/sdk zod
-cp <repo>/.github/assets/{server.mjs,orders.mcpr,demo.tape} .
+cp <repo>/.github/assets/{server.mjs,order.mcpr,demo.tape} .
 vhs demo.tape
 cp demo.gif <repo>/.github/assets/demo.gif
 ```

@@ -1,5 +1,5 @@
 MCP Test 1
-Suite: "Order service"
+Suite: "Order service release gate"
 Server: node server.mjs
 
 Test: "an order can be found by id"
