@@ -341,6 +341,7 @@ async function run(mode, paths) {
 function renderRun() {
   const run = state.run;
   if (!run) return;
+  updateExportBar();
   const query = $('results-filter').value.trim();
   const list = $('run-list');
   list.replaceChildren();
@@ -607,3 +608,24 @@ start().catch(show);
     (x) => { const rect = mainEl.getBoundingClientRect(); apply(null, `${clamp(rect.right - x, 240, rect.width - 500)}px`); },
     (delta) => { const rect = mainEl.getBoundingClientRect(); apply(null, `${clamp(resultsWidth() - delta, 240, rect.width - 500)}px`); });
 })();
+
+/* ---------- report exports ---------- */
+function updateExportBar() {
+  const run = state.run;
+  const bar = $('export-run');
+  const index = state.runSel || 0;
+  const item = run && run.items && run.items[index];
+  bar.hidden = !(run && run.mode === 'test' && item && item.status !== 'running' && item.tests);
+}
+function exportRun(format) {
+  const run = state.run;
+  if (!run) return;
+  const index = state.runSel || 0;
+  window.open(`/api/v1/export/run?id=${encodeURIComponent(run.id)}&item=${index}&format=${format}`, '_blank');
+}
+$('export-run-pdf').onclick = () => exportRun('pdf');
+$('export-run-csv').onclick = () => exportRun('csv');
+$('export-run-junit').onclick = () => exportRun('junit');
+$('export-trends-pdf').onclick = () => window.open('/api/v1/export/trends?format=pdf', '_blank');
+$('export-trends-csv').onclick = () => window.open('/api/v1/export/trends?format=csv', '_blank');
+$('export-trends-raw').onclick = () => window.open('/api/v1/export/trends?format=raw-csv', '_blank');

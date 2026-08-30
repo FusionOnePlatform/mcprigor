@@ -228,3 +228,7 @@ button.small{padding:4px 8px;font-size:11.5px;color:var(--text-faint)}
 nav .suite-row button .rn{display:none;flex:none;font-size:10px;opacity:.6;padding:0 2px}
 nav .suite-row:hover button .rn{display:inline}
 nav .suite-row button .rn:hover{opacity:1}
+
+.export-bar{display:flex;align-items:center;gap:6px;padding:8px 14px;border-bottom:1px solid var(--line-soft)}
+.export-label{font-size:11px;color:var(--text-dim);margin-right:2px}
+.export-bar .small{font-size:11px;padding:3px 10px}

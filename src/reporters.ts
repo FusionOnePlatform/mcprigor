@@ -30,7 +30,7 @@ export async function writeHtmlReport(result: RunResult, file: string): Promise<
   await writeFile(file, html, "utf8");
 }
 
-export async function writeJunitReport(result: RunResult, file: string): Promise<void> {
+export function junitXml(result: RunResult): string {
   const cases = result.tests.map((test) => {
     const detail = test.status === "failed" ? `<failure message="${xml(test.error ?? "failed")}"/>` : test.status === "skipped" ? "<skipped/>" : "";
     return `  <testcase name="${xml(test.name)}" time="${(test.durationMs / 1000).toFixed(3)}">${detail}</testcase>`;
@@ -42,7 +42,7 @@ export async function writeJunitReport(result: RunResult, file: string): Promise
     "</testsuite>",
     "",
   ].join("\n");
-  await writeFile(file, output, "utf8");
+  return output;
 }
 
 function friendly(value: string): string {
@@ -69,4 +69,8 @@ export function githubAnnotations(result: RunResult, file?: string): string {
   const failed = result.tests.filter((t) => t.status === "failed").length;
   lines.push(`::notice title=MCP Rigor::${passed} passed, ${failed} failed (${result.tests.length} total)`);
   return lines.join("\n");
+}
+
+export async function writeJunitReport(result: RunResult, file: string): Promise<void> {
+  await writeFile(file, junitXml(result), "utf8");
 }
