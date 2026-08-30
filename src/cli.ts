@@ -181,6 +181,22 @@ async function main(): Promise<void> {
     console.log(`✓ ${file} looks good and is ready to run`);
     return;
   }
+  if (command === "convert") {
+    if (!file || file.startsWith("--")) throw new UsageError("convert requires a suite file (.mcpr, .yaml, .yml, or .json)");
+    assertKnownFlags(flags, ["--out", "--format", "--allow-remote-data", "--allow-custom-code", "--max-rows"]);
+    const suite = await loadTestFile(resolve(file), compileOptions);
+    const format = flag(flags, "--format") ?? "yaml";
+    if (!["yaml", "json"].includes(format)) throw new UsageError(`--format must be yaml or json (got ${format})`);
+    const loader = await import("./loader.js");
+    const validateSuiteModel: (value: unknown) => asserts value is import("./types.js").Suite = loader.validateSuite;
+    const plain = JSON.parse(JSON.stringify(suite)) as unknown;
+    validateSuiteModel(plain); // guarantee: every natural-language suite converts to a schema-valid YAML/JSON suite
+    const rendered = format === "json" ? JSON.stringify(plain, null, 2) + "\n" : YAML.stringify(plain);
+    const out = flag(flags, "--out");
+    if (out) { await writeFile(resolve(out), rendered, "utf8"); console.log(`✓ Wrote the equivalent ${format.toUpperCase()} suite to ${out}`); }
+    else process.stdout.write(rendered);
+    return;
+  }
   if (command === "drift") {
     assertKnownFlags(flags, ["--against", "--fail-on", "--markdown", "--json", "--out", "--github-annotations", "--allow-remote-data", "--allow-custom-code", "--max-rows", "--env"]);
     const lockFile = requiredFlag(flags, "--against");
@@ -430,6 +446,9 @@ Start here:
                                       so AI agents can write and run tests
   mcprigor init my-tests.mcpr       Create an editable example
   mcprigor check my-tests.mcpr      Check the wording before running
+  mcprigor convert my-tests.mcpr --out my-tests.yaml
+                                      Emit the equivalent YAML (or --format
+                                      json) suite; both formats run the same
   mcprigor test my-tests.mcpr       Run the tests
   mcprigor test my-tests.mcpr --html report.html
                                       Readable report with a clickable

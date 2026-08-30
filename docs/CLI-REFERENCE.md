@@ -31,6 +31,15 @@ mcprigor check tests/acceptance.mcpr
 
 Validates language and configuration without connecting to the server. Alias: `validate`.
 
+### `convert`
+
+```bash
+mcprigor convert tests/acceptance.mcpr --out tests/acceptance.yaml
+mcprigor convert tests/acceptance.mcpr --format json   # prints to stdout without --out
+```
+
+Emits the equivalent YAML or JSON suite for any input format. The natural language and YAML are in strict parity — both compile to the same suite model — so the converted file validates against the suite schema and runs with identical results. Use it to hand suites to programmatic tooling or to see exactly what a `.mcpr` file means.
+
 ### `test`
 
 ```bash

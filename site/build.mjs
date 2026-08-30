@@ -450,7 +450,8 @@ ${NAV.flatMap(({ section, pages }) => pages.map(([doc, label]) => `- [${label}](
 - Natural-language tests compile deterministically; the same sentence always produces the same test.
 - Test files use the .mcpr extension (not .mcp, which conflicts with other software).
 - Transports: local stdio subprocess and deployed Streamable HTTP.
-- CLI: init, check, test, author, parity, workspace, serve, audit, coverage, monitor, publish, trends, composition-check, composition-discover, composition-drift, discover, generate, contract-check, contract-diff, contract-update, evidence-show, evidence-compare, snapshot-diff, replay.
+- CLI: init, check, convert, test, author, parity, workspace, serve, audit, coverage, monitor, publish, trends, composition-check, composition-discover, composition-drift, discover, generate, contract-check, contract-diff, contract-update, evidence-show, evidence-compare, snapshot-diff, replay.
+- Format parity: .mcpr natural language and YAML/JSON compile to the same suite model; mcprigor convert emits the equivalent YAML or JSON for any suite.
 - GitHub Action: runs suites and drift, adds flaky warnings, writes a job summary, updates one pull-request comment, and uploads report and drift-markdown artifacts.
 - Coverage: tools, resources, templates, prompts, input properties, enums, oneOf, and anyOf with --fail-under gating.
 - Monitoring: scheduled Streamable HTTP checks, transition webhooks, and shared trend history.

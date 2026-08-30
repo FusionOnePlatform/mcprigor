@@ -4,6 +4,8 @@ Status: compatibility-stable frontend for MCP Rigor 1.x.
 
 The `.mcpr` language and YAML compile to the same `Suite` runtime model. Every user-authored YAML capability has a deterministic plain-language equivalent; YAML remains available for generated files and programmatic integrations rather than being a more powerful test format.
 
+Parity is enforced, not aspirational: every `.mcpr` construct compiles to a suite that also validates against the YAML/JSON schema, and `mcprigor convert my-tests.mcpr --out my-tests.yaml` (or `--format json`) emits that equivalent file. The converted suite reloads to the identical suite model and produces the same run results — the regression suite converts each shipped example, reloads it from YAML, and compares runs.
+
 ## Design goals
 
 - Readable by QA professionals without programming experience
