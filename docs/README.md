@@ -23,6 +23,7 @@ Choose the path that matches your role.
 - [Coverage](COVERAGE.md) — find untested MCP surfaces and input-schema branches.
 - [Scheduled monitoring](MONITORING.md) — continuously test production HTTP endpoints and notify webhooks.
 - [GitHub Action](GITHUB-ACTION.md) — test, drift, flaky warnings, and rich pull-request comments.
+- [Shareable hosted reports](PUBLISHING.md) — `mcprigor publish` turns a run into a static report URL.
 
 ## Contracts and evidence
 
