@@ -31,6 +31,21 @@ mcprigor publish suite.mcpr --out reports/latest
 
 The exit code still reflects the run (`0` passed, `1` failed), so `publish` can replace `test` in a pipeline step that both gates and shares.
 
+## Publishing from the QA workspace UI
+
+The visual workspace (`mcprigor workspace`) exposes the same features without the command line:
+
+- **HTML report** — every finished test run has an `HTML report` button that opens the full report, including the clickable session timeline, in a new tab.
+- **Publish** — start the workspace with hosting configured and a `Publish` button appears next to the export buttons:
+
+  ```bash
+  export MCPRIGOR_PUBLISH_SITE=your-netlify-site
+  export NETLIFY_AUTH_TOKEN=...
+  mcprigor workspace
+  ```
+
+  Clicking it deploys the selected run's report and opens the shareable URL; a `View published ↗` link stays on the run for re-opening or copying. Without both variables the button is hidden and the API answers with a clear configuration message — the token itself never reaches the browser.
+
 ## Security
 
 - The report is produced by the same pipeline as `--html`: secrets and configured redaction patterns are removed **before** the report exists.

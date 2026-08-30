@@ -7,13 +7,16 @@ import { fileURLToPath } from "node:url";
 import { loadTestFile } from "./qa-loader.js";
 import { starterTemplate } from "./starter.js";
 import { parityReport, runParity } from "./parity.js";
-import { terminalReport } from "./reporters.js";
+import { renderHtmlReport, terminalReport } from "./reporters.js";
 import { runSuite } from "./runner.js";
+import { TraceRecorder } from "./trace.js";
+import { buildTimeline, type TimelineEntry } from "./timeline.js";
+import { createRedactor } from "./redact.js";
 import type { RunResult } from "./types.js";
 import { FRAMEWORK_VERSION } from "./version.js";
 
 export interface WorkspaceOptions { root?: string; host?: string; port?: number }
-interface WorkspaceRunItem { suite: string; status: "running" | "passed" | "failed"; output: string; error?: string; startedAt: string; durationMs?: number; tests?: Array<{ name: string; status: string; durationMs: number; error?: string }>; result?: RunResult }
+interface WorkspaceRunItem { suite: string; status: "running" | "passed" | "failed"; output: string; error?: string; startedAt: string; durationMs?: number; tests?: Array<{ name: string; status: string; durationMs: number; error?: string }>; result?: RunResult; timeline?: TimelineEntry[]; publishedUrl?: string }
 interface WorkspaceRun { id: string; mode: string; status: "running" | "passed" | "failed"; startedAt: string; items: WorkspaceRunItem[] }
 export interface HistoryEntry { at: string; mode: string; suite: string; status: "passed" | "failed"; durationMs: number; tests: Array<{ name: string; status: string; durationMs: number; error?: string }> }
 /** Files that share suite extensions but are never test suites. */
@@ -31,7 +34,7 @@ export async function startWorkspace(options: WorkspaceOptions = {}): Promise<{ 
     const url = new URL(req.url ?? "/", `http://${req.headers.host}`); const method = req.method ?? "GET";
     if (method !== "GET" && !authorized(req, csrf, `http://${req.headers.host}`)) return json(res, 403, { error: { code: "MCP-WEB-403", message: "Invalid workspace origin or CSRF token" } });
     if (url.pathname === "/" || url.pathname === "/app.js" || url.pathname === "/style.css") return asset(res, join(assets, url.pathname === "/" ? "index.html" : url.pathname.slice(1)));
-    if (url.pathname === "/api/v1/bootstrap") return json(res, 200, { version: FRAMEWORK_VERSION, root: basename(root), csrf, capabilities: ["edit", "validate", "test", "parity", "evidence", "snapshots", "contracts"] });
+    if (url.pathname === "/api/v1/bootstrap") return json(res, 200, { version: FRAMEWORK_VERSION, root: basename(root), csrf, capabilities: ["edit", "validate", "test", "parity", "evidence", "snapshots", "contracts", "report", ...(process.env.MCPRIGOR_PUBLISH_SITE && (process.env.NETLIFY_AUTH_TOKEN || process.env.MCPRIGOR_PUBLISH_TOKEN) ? ["publish"] : [])] });
     if (url.pathname === "/api/v1/suites" && method === "GET") return json(res, 200, { suites: await suites(root) });
     if (url.pathname === "/api/v1/file" && method === "GET") { const path = safePath(root, url.searchParams.get("path") ?? ""); const text = await limitedRead(path); return json(res, 200, { path: relative(root, path), text, etag: etag(text) }); }
     if (url.pathname === "/api/v1/file" && method === "POST") { const body = await bodyJson(req) as any; const name = typeof body?.name === "string" ? body.name.trim() : ""; if (!/^[A-Za-z0-9][A-Za-z0-9 ._-]{0,80}$/.test(name)) return json(res, 400, { error: { code: "MCP-WEB-400", message: "File name may use letters, numbers, spaces, dots, dashes, and underscores" } }); const fileName = name.endsWith(".mcpr") ? name : `${name}.mcpr`; const path = safePath(root, fileName); const exists = await stat(path).then(() => true).catch(() => false); if (exists) return json(res, 409, { error: { code: "MCP-WEB-409", message: `${fileName} already exists. Pick another name.` } }); await atomicWrite(path, starterTemplate); return json(res, 201, { path: relative(root, path) }); }
@@ -64,6 +67,30 @@ export async function startWorkspace(options: WorkspaceOptions = {}): Promise<{ 
       if (format === "raw-csv") return download(res, "mcprigor-history.csv", "text/csv; charset=utf-8", Buffer.from(historyCsv(entries), "utf8"));
       return download(res, "mcprigor-trends.pdf", "application/pdf", trendsPdf(entries, suite));
     }
+    if (url.pathname === "/api/v1/report" && method === "GET") {
+      const run = runs.get(url.searchParams.get("id") ?? "");
+      const item = run?.items[Number(url.searchParams.get("item") ?? 0)];
+      if (!item?.result) return json(res, 404, { error: { code: "MCP-WEB-404", message: "No completed test result for that run item" } });
+      // The report is a generated, fully escaped, self-contained document with its own inline style/script.
+      res.setHeader("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'");
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      res.end(renderHtmlReport(item.result, item.timeline));
+      return;
+    }
+    if (url.pathname === "/api/v1/publish" && method === "POST") {
+      const body = await bodyJson(req) as { id?: unknown; item?: unknown };
+      const run = runs.get(typeof body?.id === "string" ? body.id : "");
+      const index = Number(body?.item ?? 0);
+      const item = run?.items[index];
+      if (!item?.result) return json(res, 404, { error: { code: "MCP-WEB-404", message: "No completed test result for that run item" } });
+      const site = process.env.MCPRIGOR_PUBLISH_SITE;
+      const token = process.env.NETLIFY_AUTH_TOKEN || process.env.MCPRIGOR_PUBLISH_TOKEN;
+      if (!site || !token) return json(res, 409, { error: { code: "MCP-WEB-409", message: "Publishing needs MCPRIGOR_PUBLISH_SITE and NETLIFY_AUTH_TOKEN set before starting the workspace" } });
+      const { publishToNetlify } = await import("./publish.js");
+      const deployed = await publishToNetlify({ "/index.html": renderHtmlReport(item.result, item.timeline) }, { site, token, ...(process.env.MCPRIGOR_PUBLISH_API ? { apiBase: process.env.MCPRIGOR_PUBLISH_API } : {}) });
+      item.publishedUrl = deployed.url;
+      return json(res, 200, { url: deployed.url, deployId: deployed.deployId });
+    }
     if (url.pathname === "/api/v1/evidence" && method === "GET") return json(res, 200, { entries: await directoryEntries(join(root, ".mcprigor")) });
     if (url.pathname === "/api/v1/history" && method === "GET") { const suite = url.searchParams.get("suite") ?? undefined; const test = url.searchParams.get("test") ?? undefined; const entries = await readHistory(join(root, ".mcprigor", "workspace-history.jsonl")); const filtered = entries.filter((entry) => (!suite || entry.suite === suite) && (!test || entry.tests.some((item) => item.name === test))).slice(-200); return json(res, 200, { entries: filtered }); }
     return json(res, 404, { error: { code: "MCP-WEB-404", message: "Not found" } });
@@ -75,7 +102,7 @@ export async function startWorkspace(options: WorkspaceOptions = {}): Promise<{ 
         const suite = await loadTestFile(paths[index]!);
         if (run.mode === "validate") { item.status = "passed"; item.output = `✓ Valid — ${suite.tests.length} test${suite.tests.length === 1 ? "" : "s"} ready`; }
         else if (run.mode === "parity") { if (!suite.targets) throw new Error("This suite has no targets section for parity"); const result = await runParity(suite, suite.targets, { cwd: root }); item.output = parityReport(result); item.status = result.status; }
-        else { const result: RunResult = await runSuite(suite, { cwd: root }); item.result = result; item.output = terminalReport(result); item.status = result.status; item.tests = result.tests.map((test) => ({ name: test.name, status: test.status, durationMs: test.durationMs, ...(test.error ? { error: test.error } : {}) })); await appendHistory(join(root, ".mcprigor", "workspace-history.jsonl"), { at: new Date().toISOString(), mode: run.mode, suite: item.suite, status: result.status, durationMs: Date.now() - startedAt, tests: item.tests }); }
+        else { const trace = new TraceRecorder(createRedactor(suite.redact ?? [])); const result: RunResult = await runSuite(suite, { cwd: root, trace }); item.result = result; item.timeline = buildTimeline(trace.events); item.output = terminalReport(result); item.status = result.status; item.tests = result.tests.map((test) => ({ name: test.name, status: test.status, durationMs: test.durationMs, ...(test.error ? { error: test.error } : {}) })); await appendHistory(join(root, ".mcprigor", "workspace-history.jsonl"), { at: new Date().toISOString(), mode: run.mode, suite: item.suite, status: result.status, durationMs: Date.now() - startedAt, tests: item.tests }); }
       } catch (error) { item.status = "failed"; item.error = error instanceof Error ? error.message : String(error); item.output = item.error; }
       item.durationMs = Date.now() - startedAt;
     }

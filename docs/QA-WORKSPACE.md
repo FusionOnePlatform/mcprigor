@@ -54,6 +54,8 @@ One search box filters all three tabs. It matches suite names, test names, and e
 
 Completed runs expose **PDF**, **CSV**, and **JUnit XML** downloads. The Trends tab exports a rich trends PDF, aggregate CSV, or raw history CSV. PDF reports include summary cards, pass-rate visuals, per-test detail, failures, durations, and evidence identifiers.
 
+An **HTML report** button opens the full report — including the clickable request/response session timeline — in a new tab. When the workspace is started with `MCPRIGOR_PUBLISH_SITE` and `NETLIFY_AUTH_TOKEN` set, a **Publish** button also appears: one click hosts the report at a shareable static URL and keeps a `View published ↗` link on the run. See [Shareable hosted reports](PUBLISHING.md).
+
 ## What is available
 
 - Creating, renaming, and editing `.mcpr` suites (YAML and JSON suites are listed and editable too)
