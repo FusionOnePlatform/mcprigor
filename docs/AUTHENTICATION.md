@@ -113,6 +113,8 @@ mcprigor test suite.mcpr --env qa
 
 ## 5. Interactive browser-redirect OAuth
 
+> Available since `1.5.1`.
+
 Some servers require a real user to sign in through a browser (OAuth authorization-code flow) rather than a machine credential. MCP Rigor can drive that flow: it performs the login **once at the start of the run**, then carries the authorized session — with automatic token refresh — into every test in the suite.
 
 Opt in with the `OAuth` option:
