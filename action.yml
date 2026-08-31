@@ -1,5 +1,5 @@
 name: MCP Rigor
-description: Run deterministic MCP tests, contract drift, and flaky detection with a rich PR comment
+description: Test MCP servers deterministically in CI — natural-language tests, contract-drift gates, flaky detection, rich PR comments.
 author: FusionOnePlatform
 branding:
   icon: check-circle
