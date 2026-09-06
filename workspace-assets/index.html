@@ -120,9 +120,41 @@ with their checkboxes and run them together.</span></pre>
 </main>
 
 <footer>
-  <span id="workspace"></span>
+  <button id="workspace" class="workspace-btn" title="Switch workspace folder">
+    <span class="workspace-label">Workspace</span>
+    <span id="workspace-name" class="workspace-name"></span>
+    <span id="workspace-path" class="workspace-path"></span>
+  </button>
   <span class="foot-right">Natural language and YAML share one runtime model</span>
 </footer>
+
+<dialog id="folder-dialog">
+  <form method="dialog" id="folder-form">
+    <h3>Switch workspace folder</h3>
+    <p>Test files, history, and trends come from the selected folder.</p>
+    <div id="folder-current" class="folder-current" hidden>
+      <span class="folder-current-label">Current workspace</span>
+      <span id="folder-current-name" class="folder-current-name"></span>
+      <span id="folder-current-path" class="folder-current-path"></span>
+      <span id="folder-current-count" class="folder-current-count"></span>
+    </div>
+    <div class="folder-path-row">
+      <input id="folder-path" type="text" autocomplete="off" spellcheck="false" aria-label="Folder path" placeholder="/path/to/your/tests">
+      <button type="button" id="folder-go" class="ghost" title="Open typed path">Go</button>
+      <button type="button" id="folder-home" class="ghost" title="Jump to home folder">🏠</button>
+    </div>
+    <div class="folder-browser">
+      <button type="button" id="folder-up" class="folder-up">⬆ Parent folder</button>
+      <div id="folder-list" class="folder-list" role="listbox" aria-label="Subfolders"></div>
+    </div>
+    <p id="folder-info" class="dialog-hint"></p>
+    <p id="folder-error" class="dialog-error" hidden></p>
+    <div class="dialog-actions">
+      <button type="button" id="folder-cancel" class="ghost">Cancel</button>
+      <button type="submit" class="primary" id="folder-use">Use this folder</button>
+    </div>
+  </form>
+</dialog>
 
 <dialog id="new-dialog">
   <form method="dialog" id="new-form">

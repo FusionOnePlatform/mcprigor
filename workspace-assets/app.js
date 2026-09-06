@@ -14,9 +14,10 @@ async function api(path, options = {}) {
 async function start() {
   const boot = await api('/api/v1/bootstrap');
   state.csrf = boot.csrf;
+  state.rootPath = boot.rootPath || '';
   state.canPublish = (boot.capabilities || []).includes('publish');
   $('version').textContent = `v${boot.version}`;
-  $('workspace').textContent = `Folder: ${boot.root}`;
+  setWorkspaceDisplay(boot.root, boot.rootPath || boot.root);
   $('connection').classList.add('ok');
   $('connection').innerHTML = '<span class="dot"></span>Local · ready';
   const count = await refreshList();
@@ -508,6 +509,72 @@ $('rename-form').addEventListener('submit', event => {
 $('rename-cancel').onclick = () => $('rename-dialog').close();
 $('rename').onclick = () => { if (state.path) openRename(state.path); };
 $('filename').ondblclick = () => { if (state.path) openRename(state.path); };
+
+/* ---------- workspace folder switching ---------- */
+const folder = { path: '' };
+function setWorkspaceDisplay(name, fullPath) {
+  $('workspace-name').textContent = name;
+  $('workspace-path').textContent = fullPath;
+  $('workspace').title = `${fullPath} — click to switch workspace`;
+}
+function folderError(message) { $('folder-error').textContent = message; $('folder-error').hidden = false; }
+async function browseFolder(path) {
+  $('folder-error').hidden = true;
+  const value = await api(`/api/v1/folders${path ? `?path=${encodeURIComponent(path)}` : ''}`);
+  folder.path = value.path;
+  if (value.current) {
+    $('folder-current').hidden = false;
+    $('folder-current-name').textContent = value.current.root;
+    $('folder-current-path').textContent = value.current.rootPath;
+    $('folder-current-count').textContent = `${value.current.suiteCount} test file${value.current.suiteCount === 1 ? '' : 's'}`;
+  }
+  $('folder-path').value = value.path;
+  $('folder-up').disabled = !value.parent;
+  $('folder-up').onclick = () => { if (value.parent) browseFolder(value.parent).catch(e => folderError(e.message)); };
+  $('folder-info').textContent = value.suiteCount ? `${value.suiteCount} test file${value.suiteCount === 1 ? '' : 's'} found in this folder` : 'No test files here yet — you can create one after switching.';
+  const list = $('folder-list');
+  list.replaceChildren();
+  if (!value.folders.length) { const p = document.createElement('p'); p.className = 'empty'; p.textContent = 'No subfolders.'; list.append(p); }
+  for (const name of value.folders) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'folder-item';
+    button.textContent = `📁 ${name}`;
+    button.onclick = () => browseFolder(`${value.path === '/' ? '' : value.path}/${name}`).catch(e => folderError(e.message));
+    list.append(button);
+  }
+}
+function openFolderDialog() {
+  $('folder-error').hidden = true;
+  $('folder-dialog').showModal();
+  browseFolder(state.rootPath || '').catch(e => folderError(e.message));
+}
+async function switchWorkspace(path) {
+  const value = await api('/api/v1/workspace', { method: 'POST', body: JSON.stringify({ path }) });
+  state.rootPath = value.rootPath;
+  state.path = ''; state.etag = ''; state.dirty = false; state.selected.clear(); state.run = null; state.runSel = -1; state.history = [];
+  $('editor').value = ''; syncEditor();
+  $('filename').textContent = 'No file open'; $('filename').classList.remove('open');
+  $('dirty').textContent = ''; $('rename').hidden = true;
+  $('run-list').replaceChildren(); $('export-run').hidden = true;
+  $('output').innerHTML = '<span class="muted">Nothing has run yet.\nOpen a test file and click ▶ Run tests.</span>';
+  setWorkspaceDisplay(value.root, value.rootPath);
+  hideDiag(); markErrorLine(0); setEnabled(false);
+  const count = await refreshList();
+  showWelcome(!count);
+  loadHistory().catch(() => {});
+  toast(`Workspace: ${value.root}`);
+}
+$('workspace').onclick = openFolderDialog;
+$('folder-cancel').onclick = () => $('folder-dialog').close();
+$('folder-home').onclick = () => browseFolder('').catch(e => folderError(e.message));
+$('folder-go').onclick = () => browseFolder($('folder-path').value.trim()).catch(e => folderError(e.message));
+$('folder-path').addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); $('folder-go').click(); } });
+$('folder-form').addEventListener('submit', event => {
+  event.preventDefault();
+  if (state.dirty && !confirm('Discard unsaved changes?')) return;
+  switchWorkspace($('folder-path').value.trim() || folder.path).then(() => $('folder-dialog').close()).catch(error => folderError(error.message));
+});
 
 /* ---------- wiring ---------- */
 $('editor').addEventListener('input', () => { state.dirty = true; $('dirty').textContent = '● unsaved'; markErrorLine(0); openSuggest(); });

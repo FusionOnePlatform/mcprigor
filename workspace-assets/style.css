@@ -234,3 +234,27 @@ nav .suite-row button .rn:hover{opacity:1}
 .export-bar .small{font-size:11px;padding:3px 10px}
 .published-link{font-size:11px;margin-left:4px;color:var(--accent, #2563eb);text-decoration:none}
 .published-link:hover{text-decoration:underline}
+
+/* ---------- workspace folder switching ---------- */
+.workspace-btn{display:flex;align-items:center;gap:7px;max-width:60vw;background:none;border:none;color:var(--text-faint);font:inherit;font-size:11.5px;cursor:pointer;padding:2px 8px;border-radius:6px}
+.workspace-btn:hover{color:var(--text);background:var(--bg-input)}
+.workspace-btn::after{content:"▾";opacity:.7}
+.workspace-label{text-transform:uppercase;letter-spacing:.4px;font-size:10px;color:var(--text-faint)}
+.workspace-name{font-weight:600;color:var(--text)}
+.workspace-path{font-family:var(--mono, ui-monospace, monospace);font-size:10.5px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#folder-dialog{width:min(560px,92vw)}
+.folder-path-row{display:flex;gap:6px;margin-bottom:10px}
+.folder-path-row input{flex:1;font-family:var(--mono, ui-monospace, monospace);font-size:12.5px}
+.folder-browser{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:10px}
+.folder-up{display:block;width:100%;text-align:left;background:var(--bg-raised);border:none;border-bottom:1px solid var(--line-soft);border-radius:0;padding:8px 12px;font-size:12.5px;color:var(--text-dim);cursor:pointer}
+.folder-up:hover:not(:disabled){color:var(--text);background:var(--bg-input)}
+.folder-up:disabled{opacity:.4;cursor:default}
+.folder-list{max-height:220px;overflow-y:auto;padding:4px}
+.folder-item{display:block;width:100%;text-align:left;background:none;border:none;border-radius:6px;padding:6px 10px;font-size:13px;color:var(--text);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.folder-item:hover{background:var(--bg-input)}
+.folder-list .empty{margin:10px}
+.folder-current{display:grid;grid-template-columns:auto 1fr auto;align-items:center;column-gap:10px;background:var(--bg-raised);border:1px solid var(--line-soft);border-radius:8px;padding:7px 11px;margin-bottom:12px;font-size:12.5px}
+.folder-current-label{color:var(--text-faint);font-size:11px;text-transform:uppercase;letter-spacing:.4px}
+.folder-current-name{color:var(--text);font-weight:600}
+.folder-current-count{margin-left:auto;color:var(--text-dim)}
+.folder-current-path{grid-column:1 / -1;font-family:var(--mono, ui-monospace, monospace);font-size:11px;color:var(--text-dim);word-break:break-all;margin-top:2px}
