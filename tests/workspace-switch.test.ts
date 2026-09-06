@@ -49,9 +49,9 @@ describe("workspace folder switching", () => {
       const body = await switched.json() as { root: string; rootPath: string };
       expect(body.rootPath).toBe(await resolveFolder(b));
 
-      // Suites now come from B; files from A are unreachable.
+      // Suites now come from B; files from A are unreachable. (Normalize \ for Windows.)
       suites = await (await fetch(`${workspace.url}/api/v1/suites`)).json() as { suites: Array<{ path: string }> };
-      expect(suites.suites.map((s) => s.path).sort()).toEqual(["beta.mcpr", "nested/gamma.mcpr"]);
+      expect(suites.suites.map((s) => s.path.replaceAll("\\", "/")).sort()).toEqual(["beta.mcpr", "nested/gamma.mcpr"]);
       const stale = await fetch(`${workspace.url}/api/v1/file?path=alpha.mcpr`);
       expect(stale.status).toBe(500);
     } finally { await workspace.close(); }
