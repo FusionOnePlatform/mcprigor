@@ -20,6 +20,10 @@ Open the printed local URL, for example `http://127.0.0.1:4173`.
 
 Start it from a dedicated project folder rather than your home directory. Hidden directories and unreadable folders are skipped automatically, and suite discovery stops six levels deep.
 
+## Switching the workspace folder
+
+The footer always shows the current workspace — its label and the full directory path. Click it to open the folder picker: browse subfolders, jump to your home folder, or type an absolute path (`~` works) and press **Go**. The picker shows how many test files sit at the top level of each folder and which workspace is currently active. Choose **Use this folder** to switch — the file list, history, and trends immediately come from the new folder. Switching is blocked while a run is in progress, and unsaved editor changes prompt before they are discarded.
+
 ## First run
 
 An empty folder shows a three-step welcome screen. Choose **＋ New test file** (or press `Ctrl/⌘+N`): the file is created from a working example and opens immediately. Point the `Server:` line at your MCP server command — or replace it with `MCP URL:` for a deployed HTTP endpoint — then **Validate** and **▶ Run tests**.

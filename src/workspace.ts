@@ -2,7 +2,8 @@ import YAML from "yaml";
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { mkdir, readFile, readdir, realpath, rename, stat, writeFile } from "node:fs/promises";
-import { basename, dirname, extname, join, relative, resolve, sep } from "node:path";
+import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { loadTestFile } from "./qa-loader.js";
 import { starterTemplate } from "./starter.js";
@@ -25,7 +26,7 @@ const NON_SUITE_PATTERNS = [/\.lock\.(yaml|yml|json)$/i, /\.snap\.json$/i, /-sta
 const TEXT_EXTENSIONS = new Set([".mcpr", ".yaml", ".yml", ".json", ".csv"]);
 
 export async function startWorkspace(options: WorkspaceOptions = {}): Promise<{ url: string; close(): Promise<void> }> {
-  const root = await realpath(resolve(options.root ?? process.cwd())); const host = options.host ?? "127.0.0.1";
+  let root = await realpath(resolve(options.root ?? process.cwd())); const host = options.host ?? "127.0.0.1";
   if (!["127.0.0.1", "localhost", "::1"].includes(host)) throw new Error("MCP-WEB-001 QA workspace binds only to loopback addresses");
   const csrf = randomBytes(32).toString("base64url"); const runs = new Map<string, WorkspaceRun>();
   const assets = resolve(dirname(fileURLToPath(import.meta.url)), "../workspace-assets");
@@ -34,7 +35,22 @@ export async function startWorkspace(options: WorkspaceOptions = {}): Promise<{ 
     const url = new URL(req.url ?? "/", `http://${req.headers.host}`); const method = req.method ?? "GET";
     if (method !== "GET" && !authorized(req, csrf, `http://${req.headers.host}`)) return json(res, 403, { error: { code: "MCP-WEB-403", message: "Invalid workspace origin or CSRF token" } });
     if (url.pathname === "/" || url.pathname === "/app.js" || url.pathname === "/style.css") return asset(res, join(assets, url.pathname === "/" ? "index.html" : url.pathname.slice(1)));
-    if (url.pathname === "/api/v1/bootstrap") return json(res, 200, { version: FRAMEWORK_VERSION, root: basename(root), csrf, capabilities: ["edit", "validate", "test", "parity", "evidence", "snapshots", "contracts", "report", ...(process.env.MCPRIGOR_PUBLISH_SITE && (process.env.NETLIFY_AUTH_TOKEN || process.env.MCPRIGOR_PUBLISH_TOKEN) ? ["publish"] : [])] });
+    if (url.pathname === "/api/v1/bootstrap") return json(res, 200, { version: FRAMEWORK_VERSION, root: basename(root), rootPath: root, csrf, capabilities: ["edit", "validate", "test", "parity", "evidence", "snapshots", "contracts", "report", "workspace-switch", ...(process.env.MCPRIGOR_PUBLISH_SITE && (process.env.NETLIFY_AUTH_TOKEN || process.env.MCPRIGOR_PUBLISH_TOKEN) ? ["publish"] : [])] });
+    if (url.pathname === "/api/v1/folders" && method === "GET") {
+      const requested = url.searchParams.get("path") ?? "";
+      const target = await resolveFolder(requested || homedir());
+      const parent = dirname(target);
+      return json(res, 200, { path: target, parent: parent === target ? null : parent, home: homedir(), folders: await listFolders(target), suiteCount: await shallowSuiteCount(target), current: { root: basename(root), rootPath: root, suiteCount: await shallowSuiteCount(root) } });
+    }
+    if (url.pathname === "/api/v1/workspace" && method === "POST") {
+      const body = await bodyJson(req) as { path?: unknown };
+      if ([...runs.values()].some((run) => run.status === "running")) return json(res, 409, { error: { code: "MCP-WEB-409", message: "A run is still in progress. Wait for it to finish before switching folders." } });
+      let next: string;
+      try { next = await resolveFolder(typeof body?.path === "string" ? body.path : ""); }
+      catch (error) { return json(res, 400, { error: { code: "MCP-WEB-400", message: error instanceof Error ? error.message : String(error) } }); }
+      root = next; runs.clear();
+      return json(res, 200, { root: basename(root), rootPath: root });
+    }
     if (url.pathname === "/api/v1/suites" && method === "GET") return json(res, 200, { suites: await suites(root) });
     if (url.pathname === "/api/v1/file" && method === "GET") { const path = safePath(root, url.searchParams.get("path") ?? ""); const text = await limitedRead(path); return json(res, 200, { path: relative(root, path), text, etag: etag(text) }); }
     if (url.pathname === "/api/v1/file" && method === "POST") { const body = await bodyJson(req) as any; const name = typeof body?.name === "string" ? body.name.trim() : ""; if (!/^[A-Za-z0-9][A-Za-z0-9 ._-]{0,80}$/.test(name)) return json(res, 400, { error: { code: "MCP-WEB-400", message: "File name may use letters, numbers, spaces, dots, dashes, and underscores" } }); const fileName = name.endsWith(".mcpr") ? name : `${name}.mcpr`; const path = safePath(root, fileName); const exists = await stat(path).then(() => true).catch(() => false); if (exists) return json(res, 409, { error: { code: "MCP-WEB-409", message: `${fileName} already exists. Pick another name.` } }); await atomicWrite(path, starterTemplate); return json(res, 201, { path: relative(root, path) }); }
@@ -114,6 +130,25 @@ export async function startWorkspace(options: WorkspaceOptions = {}): Promise<{ 
 
 export async function suites(root: string): Promise<Array<{ path: string; name: string }>> { const files: string[] = []; async function walk(dir: string, depth: number): Promise<void> { let items; try { items = await readdir(dir, { withFileTypes: true }); } catch { return; } for (const item of items) { if (item.name.startsWith(".") || ["node_modules", "dist", "Library", "Applications"].includes(item.name)) continue; const full = join(dir, item.name); if (item.isDirectory()) { if (depth < 6) await walk(full, depth + 1); } else if (extname(item.name) === ".mcpr") files.push(relative(root, full)); else if ([".yaml", ".yml", ".json"].includes(extname(item.name)) && !NON_SUITE_FILES.has(item.name) && !NON_SUITE_PATTERNS.some((pattern) => pattern.test(item.name)) && await looksLikeSuite(full)) files.push(relative(root, full)); if (files.length >= 200) return; } } await walk(root, 0); return files.sort().map((path) => ({ path, name: basename(path) })); }
 export function safePath(root: string, input: string): string { if (!input || input.includes("\0") || input.includes("\\") || input.startsWith("/") || /^[A-Za-z]:/.test(input)) throw new Error("MCP-WEB-002 Invalid workspace path"); const output = resolve(root, input); if (output !== root && !output.startsWith(root + sep)) throw new Error("MCP-WEB-003 Path leaves workspace"); if (!TEXT_EXTENSIONS.has(extname(output))) throw new Error("MCP-WEB-004 Unsupported file type"); return output; }
+/** Resolve a user-chosen workspace folder: absolute, existing, readable directory. */
+export async function resolveFolder(input: string): Promise<string> {
+  const trimmed = input.trim();
+  if (!trimmed || trimmed.includes("\0")) throw new Error("MCP-WEB-002 Provide a folder path");
+  const expanded = trimmed === "~" || trimmed.startsWith("~/") ? join(homedir(), trimmed.slice(1)) : trimmed;
+  if (!isAbsolute(expanded)) throw new Error("MCP-WEB-002 The folder path must be absolute");
+  const real = await realpath(expanded).catch(() => { throw new Error(`MCP-WEB-002 Folder not found: ${expanded}`); });
+  const info = await stat(real);
+  if (!info.isDirectory()) throw new Error(`MCP-WEB-002 Not a folder: ${expanded}`);
+  await readdir(real); // readable check — throws if not
+  return real;
+}
+async function listFolders(dir: string): Promise<string[]> {
+  try { return (await readdir(dir, { withFileTypes: true })).filter((item) => item.isDirectory() && !item.name.startsWith(".") && !["node_modules", "dist"].includes(item.name)).map((item) => item.name).sort((a, b) => a.localeCompare(b)).slice(0, 500); } catch { return []; }
+}
+/** Fast suite count for the folder picker: top level only, .mcpr by extension, no content sniffing. */
+async function shallowSuiteCount(dir: string): Promise<number> {
+  try { return (await readdir(dir, { withFileTypes: true })).filter((item) => item.isFile() && extname(item.name) === ".mcpr").length; } catch { return 0; }
+}
 /** Cheap structural check: list a YAML/JSON file as a suite only when it has the suite shape (version 1 + target + tests). */
 async function looksLikeSuite(file: string): Promise<boolean> {
   try {
