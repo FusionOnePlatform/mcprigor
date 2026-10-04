@@ -38,7 +38,7 @@ export function compileQaLanguage(source: string, file = "test.mcpr"): Suite {
     if ((match = line.match(/^Server options for\s+["']([^"']+)["']:\s*$/i))) {
       const selected = servers[match[1]!]; if (!selected) fail(file, lineNumber, `Unknown named server “${match[1]}”. Declare it first.`);
       const block = readIndentedMap(lines, index, file); index = block.lastLine;
-      Object.assign(selected, selected.transport === "stdio" ? { cwd: block.value.cwd, env: block.value.env } : httpOptions(block.value as Record<string, unknown>, file)); continue;
+      safeAssign(selected, selected.transport === "stdio" ? { cwd: block.value.cwd, env: block.value.env } : httpOptions(block.value as Record<string, unknown>, file)); continue;
     }
     if ((match = line.match(/^(?:Compare|Parity) target\s+["']([^"']+)["']:\s*(.+)$/i))) {
       const label = match[1]!.trim(); const connection = match[2]!.trim();
@@ -49,7 +49,7 @@ export function compileQaLanguage(source: string, file = "test.mcpr"): Suite {
     if ((match = line.match(/^Target options for\s+["']([^"']+)["']:\s*$/i))) {
       const selected = targets[match[1]!]; if (!selected) fail(file, lineNumber, `Unknown parity target “${match[1]}”. Declare it first.`);
       const block = readIndentedMap(lines, index, file); index = block.lastLine;
-      Object.assign(selected, selected.transport === "stdio" ? { cwd: block.value.cwd, env: block.value.env } : httpOptions(block.value as Record<string, unknown>, file)); continue;
+      safeAssign(selected, selected.transport === "stdio" ? { cwd: block.value.cwd, env: block.value.env } : httpOptions(block.value as Record<string, unknown>, file)); continue;
     }
     if ((match = line.match(/^Budget(?:\s+for\s+["']([^"']+)["'])?:\s*p(\d{1,3})\s+(\d+)\s*(ms|milliseconds?|s|seconds?)(?:\s+over\s+(\d+)\s+(?:calls|runs|samples))?$/i))) {
       const maxMs = /^s/i.test(match[4]!) ? Number(match[3]) * 1000 : Number(match[3]);
@@ -259,6 +259,14 @@ function oauthOption(value: Record<string, unknown>, file: string): { oauth?: im
 }
 function httpOptions(value: Record<string, unknown>, file: string): Record<string, unknown> {
   return { headers: value.headers, ...tokenFromOption(value), ...oauthOption(value, file) };
+}
+
+/** Merge server/target options without ever writing __proto__, constructor, or prototype keys. */
+function safeAssign<T extends object>(target: T, source: Record<string, unknown>): void {
+  for (const [key, item] of Object.entries(source)) {
+    if (key === "__proto__" || key === "constructor" || key === "prototype") continue;
+    (target as Record<string, unknown>)[key] = item;
+  }
 }
 
 function readIndentedMap(lines: string[], start: number, file: string): { value: Record<string, unknown>; lastLine: number } {

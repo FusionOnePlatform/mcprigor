@@ -68,7 +68,7 @@ export async function recordSession(options: { command: string; args: string[]; 
 }
 
 function literal(value: unknown): string {
-  if (typeof value === "string") return `"${value.replace(/"/g, '\\"')}"`;
+  if (typeof value === "string") return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
   if (typeof value === "number" || typeof value === "boolean") return String(value);
   return JSON.stringify(value);
 }

@@ -30,7 +30,7 @@ export async function startWorkspace(options: WorkspaceOptions = {}): Promise<{ 
   if (!["127.0.0.1", "localhost", "::1"].includes(host)) throw new Error("MCP-WEB-001 QA workspace binds only to loopback addresses");
   const csrf = randomBytes(32).toString("base64url"); const runs = new Map<string, WorkspaceRun>();
   const assets = resolve(dirname(fileURLToPath(import.meta.url)), "../workspace-assets");
-  const server = createServer(async (req, res) => { securityHeaders(res); try { await route(req, res); } catch (error) { json(res, 500, { error: { code: "MCP-WEB-500", message: error instanceof Error ? error.message : String(error) } }); } });
+  const server = createServer(async (req, res) => { securityHeaders(res); try { await route(req, res); } catch (error) { console.error("[MCP Rigor workspace] internal error:", error); json(res, 500, { error: { code: "MCP-WEB-500", message: "Internal server error" } }); } });
   async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const url = new URL(req.url ?? "/", `http://${req.headers.host}`); const method = req.method ?? "GET";
     if (method !== "GET" && !authorized(req, csrf, `http://${req.headers.host}`)) return json(res, 403, { error: { code: "MCP-WEB-403", message: "Invalid workspace origin or CSRF token" } });
@@ -158,7 +158,7 @@ async function looksLikeSuite(file: string): Promise<boolean> {
     return !!value && typeof value === "object" && !Array.isArray(value) && value.version === 1 && Array.isArray(value.tests) && typeof value.target === "object";
   } catch { return false; }
 }
-export async function limitedRead(path: string): Promise<string> { const info = await stat(path); if (info.size > 1024 * 1024) throw new Error("MCP-WEB-005 File exceeds 1 MiB"); return readFile(path, "utf8"); }
+export async function limitedRead(path: string): Promise<string> { const content = await readFile(path, "utf8"); if (Buffer.byteLength(content) > 1024 * 1024) throw new Error("MCP-WEB-005 File exceeds 1 MiB"); return content; }
 export async function atomicWrite(path: string, text: string): Promise<void> { await mkdir(dirname(path), { recursive: true }); const temp = `${path}.${randomBytes(6).toString("hex")}.tmp`; await writeFile(temp, text, { mode: 0o600 }); await rename(temp, path); }
 const HISTORY_LIMIT = 2000;
 async function migrateHistory(path: string, from: string, to: string): Promise<void> { try { const entries = await readHistory(path); if (!entries.length) return; let changed = false; for (const entry of entries) if (entry.suite === from) { entry.suite = to; changed = true; } if (changed) await writeFile(path, entries.map((item) => JSON.stringify(item)).join("\n") + "\n", "utf8"); } catch { /* best-effort */ } }

@@ -1,4 +1,4 @@
-import { readFile, realpath, stat } from "node:fs/promises";
+import { readFile, realpath } from "node:fs/promises";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 
 export interface ImportGraph { source: string; importedFiles: string[] }
@@ -31,11 +31,10 @@ export async function resolveFlowImports(source: string, entryFile: string, stac
     const specifier = match[1]!;
     if (isAbsolute(specifier)) throw new Error(`MCPLANG304 Import path must be relative to the test file, not absolute: ${specifier}`);
     const imported = await confine(resolve(dirname(canonical), specifier), rootDir, specifier);
-    const size = await stat(imported).then((s) => s.size).catch(() => 0);
-    if (size > maxFileBytes) throw new Error(`MCPLANG305 Imported flow library ${specifier} exceeds ${maxFileBytes} bytes`);
     let importedSource: string;
     try { importedSource = await readFile(imported, "utf8"); }
     catch { throw new Error(`MCPLANG302 Cannot import flow library ${specifier} from ${entryFile}`); }
+    if (Buffer.byteLength(importedSource) > maxFileBytes) throw new Error(`MCPLANG305 Imported flow library ${specifier} exceeds ${maxFileBytes} bytes`);
     const graph = await resolveFlowImports(importedSource, imported, [...stack, canonical], { rootDir, maxDepth, maxImports, maxFileBytes });
     importedFiles.push(imported, ...graph.importedFiles);
     if (new Set(importedFiles).size > maxImports) throw new Error(`MCPLANG306 More than ${maxImports} imported flow libraries`);

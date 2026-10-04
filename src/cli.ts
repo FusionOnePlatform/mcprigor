@@ -409,7 +409,8 @@ async function watchAndRun(file: string, initialSuite: Suite, compileOptions: { 
   let timer: ReturnType<typeof setTimeout> | undefined;
   const trigger = (_event: string, name: string | Buffer | null) => {
     const changed = String(name ?? "");
-    if (/^\.|node_modules|\.git|\.mcprigor|report\.html|\.log$/.test(changed)) return;
+    const basename = changed.split(/[\\/]/).pop() ?? changed;
+    if (basename.startsWith(".") || changed.includes("node_modules") || changed.includes(".git") || changed.includes(".mcprigor") || basename === "report.html" || basename.endsWith(".log")) return;
     if (timer) clearTimeout(timer);
     timer = setTimeout(() => void cycle(), 250);
   };
