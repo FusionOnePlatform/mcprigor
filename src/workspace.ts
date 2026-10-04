@@ -30,7 +30,7 @@ export async function startWorkspace(options: WorkspaceOptions = {}): Promise<{ 
   if (!["127.0.0.1", "localhost", "::1"].includes(host)) throw new Error("MCP-WEB-001 QA workspace binds only to loopback addresses");
   const csrf = randomBytes(32).toString("base64url"); const runs = new Map<string, WorkspaceRun>();
   const assets = resolve(dirname(fileURLToPath(import.meta.url)), "../workspace-assets");
-  const server = createServer(async (req, res) => { securityHeaders(res); try { await route(req, res); } catch (error) { console.error("[MCP Rigor workspace] internal error:", messageOf(error).replace(/\r?\n/g, " ")); json(res, 500, { error: { code: "MCP-WEB-500", message: "Internal server error" } }); } });
+  const server = createServer(async (req, res) => { securityHeaders(res); try { await route(req, res); } catch (error) { console.error("[MCP Rigor workspace] internal error"); json(res, 500, { error: { code: "MCP-WEB-500", message: "Internal server error" } }); } });
   async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const url = new URL(req.url ?? "/", `http://${req.headers.host}`); const method = req.method ?? "GET";
     if (method !== "GET" && !authorized(req, csrf, `http://${req.headers.host}`)) return json(res, 403, { error: { code: "MCP-WEB-403", message: "Invalid workspace origin or CSRF token" } });
