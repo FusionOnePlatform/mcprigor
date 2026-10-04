@@ -261,11 +261,11 @@ function httpOptions(value: Record<string, unknown>, file: string): Record<strin
   return { headers: value.headers, ...tokenFromOption(value), ...oauthOption(value, file) };
 }
 
-/** Merge server/target options without ever writing __proto__, constructor, or prototype keys. */
+/** Merge server/target options from a fixed, known set of keys only — never attacker-chosen property names. */
 function safeAssign<T extends object>(target: T, source: Record<string, unknown>): void {
-  for (const [key, item] of Object.entries(source)) {
-    if (key === "__proto__" || key === "constructor" || key === "prototype") continue;
-    (target as Record<string, unknown>)[key] = item;
+  const record = target as Record<string, unknown>;
+  for (const key of ["cwd", "env", "headers", "tokenFrom", "oauth"]) {
+    if (key in source) record[key] = source[key];
   }
 }
 
