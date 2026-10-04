@@ -1,4 +1,4 @@
-import { readFile, stat } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { extname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { fingerprint } from "./canonical.js";
@@ -171,8 +171,8 @@ function scalar(value: string): unknown {
   return value;
 }
 async function loadExcel(file: string, sheet: unknown): Promise<Record<string, unknown>[]> {
-  const info = await stat(file); if (info.size > 25 * 1024 * 1024) throw new Error("MCP-DATA-018 Spreadsheet exceeds the 25 MiB compressed limit");
   const archive = await readFile(file);
+  if (archive.length > 25 * 1024 * 1024) throw new Error("MCP-DATA-018 Spreadsheet exceeds the 25 MiB compressed limit");
   if (archive[0] !== 0x50 || archive[1] !== 0x4b) throw new Error("MCP-DATA-019 Spreadsheet is not a valid XLSX ZIP container");
   const { readXlsxSheet } = await import("./xlsx.js");
   const { rows } = readXlsxSheet(archive, sheet === undefined || sheet === null ? undefined : String(sheet));

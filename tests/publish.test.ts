@@ -10,7 +10,7 @@ afterEach(async () => { for (const cleanup of cleanups.splice(0)) await cleanup(
 
 describe("shareable hosted reports", () => {
   it("deploys files through the digest API and returns the live URL", async () => {
-    const uploads: Record<string, string> = {};
+    const uploads = new Map<string, string>();
     let creates = 0; let polls = 0;
     const server = createServer((req, res) => {
       let body = ""; req.on("data", (part) => body += part);
@@ -23,7 +23,7 @@ describe("shareable hosted reports", () => {
           return;
         }
         if (req.method === "PUT" && req.url?.startsWith("/deploys/deploy-1/files/")) {
-          uploads[decodeURIComponent(req.url.slice("/deploys/deploy-1/files".length))] = body;
+          uploads.set(decodeURIComponent(req.url.slice("/deploys/deploy-1/files".length)), body);
           res.writeHead(200, { "content-type": "application/json" }); res.end("{}");
           return;
         }
@@ -45,8 +45,8 @@ describe("shareable hosted reports", () => {
     expect(creates).toBe(1);
     expect(result.url).toBe("https://deploy-1--demo.netlify.app");
     expect(result.deployId).toBe("deploy-1");
-    expect(uploads["/index.html"]).toBe("<html>report</html>");
-    expect(uploads["/result.json"]).toBe("{}\n");
+    expect(uploads.get("/index.html")).toBe("<html>report</html>");
+    expect(uploads.get("/result.json")).toBe("{}\n");
   });
 
   it("skips uploads that the API did not mark as required", async () => {

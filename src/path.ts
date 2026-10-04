@@ -25,17 +25,17 @@ export function readPath(value: unknown, path: string | undefined): unknown {
 
 export function replaceVariables(value: unknown, variables: Record<string, unknown>): unknown {
   if (typeof value === "string") {
-    const exact = value.match(/^\$\{([^}]+)\}$/);
+    const exact = value.match(/^\$\{([^{}]+)\}$/);
     if (exact) {
         let resolved = variable(exact[1]!, variables);
       const seen = new Set<string>([value]);
-      while (typeof resolved === "string" && /^\$\{[^}]+\}$/.test(resolved) && !seen.has(resolved)) {
+      while (typeof resolved === "string" && /^\$\{[^{}]+\}$/.test(resolved) && !seen.has(resolved)) {
         seen.add(resolved);
         resolved = replaceVariables(resolved, variables);
       }
       return resolved;
     }
-    return value.replace(/\$\{([^}]+)\}/g, (_, name: string) => String(variable(name, variables)));
+    return value.replace(/\$\{([^{}]+)\}/g, (_, name: string) => String(variable(name, variables)));
   }
   if (Array.isArray(value)) return value.map((item) => replaceVariables(item, variables));
   if (typeof value === "object" && value !== null) {

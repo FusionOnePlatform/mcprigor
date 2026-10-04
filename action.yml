@@ -63,7 +63,16 @@ runs:
         cache: npm
     - name: Install MCP Rigor
       shell: bash
-      run: npm install --no-save --ignore-scripts "mcprigor@${{ inputs.version }}"
+      env:
+        RIGOR_VERSION: ${{ inputs.version }}
+      run: |
+        case "$RIGOR_VERSION" in
+          latest) ;;
+          v[0-9]*.[0-9]*.[0-9]* | v[0-9]*.[0-9]*.[0-9]*-*) ;;
+          [0-9]*.[0-9]*.[0-9]* | [0-9]*.[0-9]*.[0-9]*-*) ;;
+          *) echo "Invalid MCP Rigor version: '$RIGOR_VERSION' (use 'latest' or a semver like 1.5.3)" >&2; exit 1 ;;
+        esac
+        npm install --no-save --ignore-scripts "mcprigor@$RIGOR_VERSION"
     - name: Run MCP Rigor checks
       id: rigor
       shell: bash
@@ -76,7 +85,9 @@ runs:
     - name: Publish job summary
       if: always()
       shell: bash
-      run: test -f "${{ steps.rigor.outputs.report }}" && cat "${{ steps.rigor.outputs.report }}" >> "$GITHUB_STEP_SUMMARY" || true
+      env:
+        REPORT_PATH: ${{ steps.rigor.outputs.report }}
+      run: test -f "$REPORT_PATH" && cat "$REPORT_PATH" >> "$GITHUB_STEP_SUMMARY" || true
     - name: Upload report artifact
       if: always() && inputs.artifact == 'true' && steps.rigor.outputs.artifact-dir != ''
       uses: actions/upload-artifact@v4
