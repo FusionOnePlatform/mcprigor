@@ -169,7 +169,7 @@ function etag(text: string): string { return `sha256:${createHash("sha256").upda
 /** Safe, single-line error message for responses and logs — never a stack trace or control characters. */
 function messageOf(error: unknown): string {
   const text = error instanceof Error ? error.message : typeof error === "string" ? error : "Unknown error";
-  return text.replace(/[\u0000-\u001F\u007F]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 500);
+  return text.replace(/[\r\n]/g, " ").trim().slice(0, 500);
 }
 function authorized(req: IncomingMessage, token: string, origin: string): boolean { const supplied = String(req.headers["x-mcp-csrf"] ?? ""); return req.headers.origin === origin && supplied.length === token.length && timingSafeEqual(Buffer.from(supplied), Buffer.from(token)); }
 async function bodyJson(req: IncomingMessage): Promise<unknown> { const chunks: Buffer[] = []; let size = 0; for await (const chunk of req) { size += chunk.length; if (size > 1024 * 1024) throw new Error("Request body exceeds 1 MiB"); chunks.push(chunk); } return JSON.parse(Buffer.concat(chunks).toString("utf8")); }

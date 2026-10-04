@@ -264,9 +264,11 @@ function httpOptions(value: Record<string, unknown>, file: string): Record<strin
 /** Merge server/target options from a fixed, known set of keys only — never attacker-chosen property names. */
 function safeAssign<T extends object>(target: T, source: Record<string, unknown>): void {
   const record = target as Record<string, unknown>;
-  for (const key of ["cwd", "env", "headers", "tokenFrom", "oauth"]) {
-    if (key in source) record[key] = source[key];
-  }
+  if ("cwd" in source) record.cwd = source.cwd;
+  if ("env" in source) record.env = source.env;
+  if ("headers" in source) record.headers = source.headers;
+  if ("tokenFrom" in source) record.tokenFrom = source.tokenFrom;
+  if ("oauth" in source) record.oauth = source.oauth;
 }
 
 function readIndentedMap(lines: string[], start: number, file: string): { value: Record<string, unknown>; lastLine: number } {
